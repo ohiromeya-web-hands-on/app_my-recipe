@@ -137,14 +137,14 @@
 | 項目 | MVP 方針 | スコープ |
 |------|---------|---------|
 | 読取 | 全員可（レシピは公開閲覧可）。SEO・OGP の恩恵を受ける | 【コア】 |
-| 書込・削除 | **Google OAuth のみ**。`Auth.js` (NextAuth) の Google Provider を採用。環境変数 `OWNER_GOOGLE_SUB` に Google アカウントの stable subject ID を保存し、**サインイン時に `sub` 一致検証 → 一致以外はエラー**。パスワード保持・リセット不要、個人利用の Google アカウントで運用しやすい | 【コア】 |
+| 書込・削除 | **Google OAuth のみ**。`Auth.js` (NextAuth) の Google Provider を採用。環境変数 `OWNER_GOOGLE_EMAILS` に許可する Google アカウントのメールアドレスをカンマ区切りで保存し、**サインイン時に email 一致検証 → 一致以外はエラー**。MVP ではオーナー本人と予備アドレスの 2 件を許可する | 【コア】 |
 | セッション | JWT（HttpOnly、SameSite=Lax、Secure） | 【コア】 |
 | CSRF | `Auth.js` 組込の CSRF トークン、Server Actions の組込対策 | 【コア】 |
 | レート制限 | API ルートに IP 単位 60 req/min（書込系のみ）。`@upstash/ratelimit` + Upstash Redis Free tier | 【拡張】 |
 | 監査ログ | 書込系操作は `AuditLog` テーブルに記録（`actor` / `action` / `targetType` / `targetId` / `at` / `ip`） | 【拡張】 |
-| 秘密情報 | `.env.local` に格納（`.env.example` をコミット）。本番は Vercel 環境変数。Google OAuth 用に `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`OWNER_GOOGLE_SUB` を使用 | 【コア】 |
+| 秘密情報 | `.env.local` に格納（`.env.example` をコミット）。本番は Vercel 環境変数。Google OAuth 用に `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`OWNER_GOOGLE_EMAILS` を使用 | 【コア】 |
 
-> **Google OAuth 採用の理由**：`Credentials Provider` + bcrypt は Auth.js 公式が本番非推奨で、パスワードリセット／再発行の自前実装が必要になる。シングルオーナー前提なら Google アカウントの `sub` を環境変数に固定するだけで実装量が小さく、漏洩リスクも低い。料理・買い物用途の個人アプリとしても、普段使いの Google アカウントで認証できる方が自然である。
+> **Google OAuth 採用の理由**：`Credentials Provider` + bcrypt は Auth.js 公式が本番非推奨で、パスワードリセット／再発行の自前実装が必要になる。Google OAuth と許可メールアドレスの照合であれば実装量が小さく、漏洩リスクも低い。料理・買い物用途の個人アプリとしても、普段使いの Google アカウントで認証できる方が自然である。
 
 > **公開画像の前提**：レシピ詳細ページは公開閲覧可能なため、料理写真も公開 URL で配信できる画像として扱う。本アプリでは秘匿性の高い画像や、認証がないと見られない画像は扱わない。この前提により、レシピ詳細画面・一覧サムネイル・OGP 画像などで同じ画像をシンプルに利用できるようにする。
 

@@ -34,7 +34,7 @@ AUTH_SECRET=
 AUTH_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-OWNER_GOOGLE_SUB=
+OWNER_GOOGLE_EMAILS=owner@example.com,backup-owner@example.com
 DATABASE_URL=file:./dev.db
 CRON_SECRET=
 BLOB_READ_WRITE_TOKEN=
@@ -67,10 +67,10 @@ Create an OAuth client in Google Cloud Console and register these redirect URIs:
 - Local: `http://localhost:3000/api/auth/callback/google`
 - Production: `https://<your-domain>/api/auth/callback/google`
 
-To bootstrap `OWNER_GOOGLE_SUB`, temporarily log the Google profile subject in `auth.ts`:
+Set the allowed owner Google accounts as a comma-separated list:
 
-```ts
-console.log("Google profile sub:", profile?.sub);
+```bash
+OWNER_GOOGLE_EMAILS=owner@example.com,backup-owner@example.com
 ```
 
-Add that line at the start of the `signIn` callback, deploy once, and attempt sign-in with the intended owner Google account. Because `OWNER_GOOGLE_SUB` is not set yet, sign-in will be rejected, but Vercel Logs will show the stable `sub`. Copy that value into `.env.local` and Vercel as `OWNER_GOOGLE_SUB`, then remove the temporary log and redeploy.
+Only Google OAuth profiles whose email matches one of those normalized addresses can sign in. Use ordinary Google account email addresses here; no `sub` bootstrap step is required.

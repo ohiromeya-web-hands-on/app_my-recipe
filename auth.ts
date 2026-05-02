@@ -1,6 +1,15 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
+function getAllowedOwnerEmails() {
+  return new Set(
+    (process.env.OWNER_GOOGLE_EMAILS ?? "")
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
 export const { auth, handlers, signIn, signOut } = NextAuth({
   providers: [
     Google({
@@ -14,13 +23,14 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   trustHost: true,
   callbacks: {
     async signIn({ profile }) {
-      const ownerSub = process.env.OWNER_GOOGLE_SUB;
+      const allowedEmails = getAllowedOwnerEmails();
+      const profileEmail = profile?.email?.toLowerCase();
 
-      if (!ownerSub) {
+      if (!profileEmail || allowedEmails.size === 0) {
         return false;
       }
 
-      return profile?.sub === ownerSub;
+      return allowedEmails.has(profileEmail);
     },
     async jwt({ token, profile }) {
       if (profile?.sub) {
