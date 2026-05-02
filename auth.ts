@@ -26,7 +26,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       const allowedEmails = getAllowedOwnerEmails();
       const profileEmail = profile?.email?.toLowerCase();
 
-      if (!profileEmail || allowedEmails.size === 0) {
+      if (!profileEmail || !profile?.email_verified || allowedEmails.size === 0) {
         return false;
       }
 
