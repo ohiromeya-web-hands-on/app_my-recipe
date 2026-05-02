@@ -15,6 +15,7 @@ export function getTranslations(): TranslationResult {
   };
 }
 
+// Client Component alias kept to match the requirement-level useTranslation API.
 export function useTranslation(): TranslationResult {
   return getTranslations();
 }

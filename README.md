@@ -67,4 +67,10 @@ Create an OAuth client in Google Cloud Console and register these redirect URIs:
 - Local: `http://localhost:3000/api/auth/callback/google`
 - Production: `https://<your-domain>/api/auth/callback/google`
 
-To obtain `OWNER_GOOGLE_SUB`, sign in once with the intended owner account and inspect the Google profile `sub` value from the Auth.js callback/session logs or a temporary debug route. Set that exact stable subject ID in `.env.local` and Vercel.
+To bootstrap `OWNER_GOOGLE_SUB`, temporarily log the Google profile subject in `auth.ts`:
+
+```ts
+console.log("Google profile sub:", profile?.sub);
+```
+
+Add that line at the start of the `signIn` callback, deploy once, and attempt sign-in with the intended owner Google account. Because `OWNER_GOOGLE_SUB` is not set yet, sign-in will be rejected, but Vercel Logs will show the stable `sub`. Copy that value into `.env.local` and Vercel as `OWNER_GOOGLE_SUB`, then remove the temporary log and redeploy.
