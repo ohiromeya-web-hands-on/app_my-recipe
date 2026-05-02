@@ -58,4 +58,13 @@ npm audit --audit-level=moderate
    `https://<your-domain>/api/auth/callback/google`
 4. Push to `main`; Vercel will build with `npm run build`.
 
-GitHub Actions also runs `npm ci`, `npm run typecheck`, and `npm run build` on pull requests and `main`.
+GitHub Actions also runs `npm ci`, `npm run typecheck`, `npm audit --audit-level=moderate`, and `npm run build` on pull requests and `main`.
+
+## Google OAuth Owner Setup
+
+Create an OAuth client in Google Cloud Console and register these redirect URIs:
+
+- Local: `http://localhost:3000/api/auth/callback/google`
+- Production: `https://<your-domain>/api/auth/callback/google`
+
+To obtain `OWNER_GOOGLE_SUB`, sign in once with the intended owner account and inspect the Google profile `sub` value from the Auth.js callback/session logs or a temporary debug route. Set that exact stable subject ID in `.env.local` and Vercel.

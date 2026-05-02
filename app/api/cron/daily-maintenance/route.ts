@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
+
+function safeTokenEquals(actual: string | null, expected: string) {
+  if (!actual) {
+    return false;
+  }
+
+  const actualBuffer = Buffer.from(actual);
+  const expectedBuffer = Buffer.from(`Bearer ${expected}`);
+
+  if (actualBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(actualBuffer, expectedBuffer);
+}
 
 export function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const expected = process.env.CRON_SECRET;
 
-  if (!expected || authHeader !== `Bearer ${expected}`) {
+  if (!expected || !safeTokenEquals(authHeader, expected)) {
     return NextResponse.json(
       { ok: false, error: { code: "UNAUTHORIZED", message: "Invalid cron secret" } },
       { status: 401 }

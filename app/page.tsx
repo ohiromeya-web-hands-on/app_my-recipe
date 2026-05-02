@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
-import { AuthActions } from "@/app/components/auth-actions";
-import { ThemeToggle } from "@/app/components/theme-toggle";
-import { useTranslation } from "@/app/lib/i18n";
+import { AuthActions } from "@/components/auth-actions";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { getTranslations } from "@/lib/i18n";
 
 const deploymentChecks = [
   {
@@ -33,7 +33,7 @@ const deploymentChecks = [
 
 export default async function Home() {
   const session = await auth();
-  const { t } = useTranslation();
+  const { t } = getTranslations();
   const isSignedIn = Boolean(session?.user);
 
   return (

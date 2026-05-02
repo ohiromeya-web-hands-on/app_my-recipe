@@ -165,7 +165,7 @@ h2 {
 
 .status-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -233,10 +233,6 @@ h2 {
     margin-top: 16px;
   }
 
-  .status-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .auth-card {
     align-items: stretch;
     flex-direction: column;
@@ -255,7 +251,4 @@ h2 {
     padding: 20px;
   }
 
-  .status-grid {
-    grid-template-columns: 1fr;
-  }
 }
