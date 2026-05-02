@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">MyKitchen</title>
+  <desc id="desc">Default Open Graph image for MyKitchen.</desc>
+  <rect width="1200" height="630" fill="#f7f4ee"/>
+  <rect x="72" y="72" width="1056" height="486" rx="24" fill="#ffffff" stroke="#ded8cd" stroke-width="2"/>
+  <text x="120" y="260" fill="#2f6f5e" font-family="Arial, sans-serif" font-size="42" font-weight="700">MyKitchen</text>
+  <text x="120" y="336" fill="#1d1b18" font-family="Arial, sans-serif" font-size="76" font-weight="700">Recipe management</text>
+  <text x="120" y="404" fill="#6f6a61" font-family="Arial, sans-serif" font-size="34">Next.js / Auth.js / next-themes</text>
+</svg>

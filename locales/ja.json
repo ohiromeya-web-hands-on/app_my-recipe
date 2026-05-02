@@ -1,0 +1,15 @@
+{
+  "appName": "MyKitchen",
+  "tagline": "レシピ管理 Web アプリのデプロイ検証ページ",
+  "checks": {
+    "language": "TypeScript",
+    "framework": "Next.js App Router",
+    "auth": "Auth.js Google OAuth",
+    "theme": "next-themes",
+    "i18n": "locales/ja.json"
+  },
+  "auth": {
+    "signedIn": "Google 認証セッションを検出しました",
+    "signedOut": "未ログインです。Google OAuth 設定後にサインインできます"
+  }
+}

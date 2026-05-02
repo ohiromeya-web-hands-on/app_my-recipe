@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+        env:
+          AUTH_SECRET: ci-secret
+          AUTH_URL: http://localhost:3000
+          GOOGLE_CLIENT_ID: ci-client-id
+          GOOGLE_CLIENT_SECRET: ci-client-secret
+          OWNER_GOOGLE_SUB: ci-owner-sub
+          DATABASE_URL: file:./dev.db
+          CRON_SECRET: ci-cron-secret
+          BLOB_READ_WRITE_TOKEN: ci-blob-token
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
