@@ -102,5 +102,6 @@ GitHub organization 配下の private repository は、Vercel Hobby ではデプ
 | `/sitemap.xml` | 自動生成 sitemap |
 | `/robots.txt` | 自動生成 robots |
 
+## 学習情報
 - 名前: 黒須朝陽
 - 学習開始日: 2026-05-04
