@@ -2,15 +2,15 @@
   "name": "app-my-recipe",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "postinstall": "prisma generate",
-    "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+ "scripts": {
+  "dev": "next dev",
+  "build": "prisma generate && next build",
+  "postinstall": "prisma generate",
+  "start": "next start",
+  "typecheck": "prisma generate && tsc --noEmit",
+  "db:migrate": "prisma migrate dev",
+  "db:seed": "tsx prisma/seed.ts",
+  "db:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.8.0",
