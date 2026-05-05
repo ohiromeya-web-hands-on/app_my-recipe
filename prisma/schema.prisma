@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Recipe {
+  id        String   @id @default(cuid())
+  title     String
+  category RecipeCategory
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  steps     Step[]
+  ingredients RecipeIngredient[]
+  genres    RecipeGenre[]
+　mealTypes RecipeMealType[]
+}
+
+model Step {
+  id        String   @id @default(cuid())
+  content   String
+  order     Int
+
+  recipeId  String
+  recipe    Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([recipeId, order])
+}
+
+model ShoppingItem {
+  id             String   @id @default(cuid())
+  name           String
+  normalizedName String   @unique
+  status   ShoppingStatus
+　category ShoppingCategory
+  createdAt      DateTime @default(now())
+  deletedAt      DateTime?
+
+  recipeIngredients RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id             String @id @default(cuid())
+  recipeId       String
+  shoppingItemId String　//
+  quantity       String?
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  shoppingItem ShoppingItem @relation(fields: [shoppingItemId], references: [id], onDelete: Cascade)
+}
+
+enum RecipeGenreValue {
+  WASHOKU
+  YOSHOKU
+  CHINESE
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+model RecipeGenre {
+  id       String @id @default(cuid())
+  recipeId String
+  genre    RecipeGenreValue
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, genre])
+}
+
+model RecipeMealType {
+  id       String @id @default(cuid())
+  recipeId String
+  mealType MealType
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, mealType])
+}
+
+enum RecipeCategory {
+  MAIN
+  SIDE
+  SOUP
+  DESSERT
+  OTHER
+}
+
+enum ShoppingStatus {
+  NEED
+  STOCK
+  OPTIONAL
+}
+
+enum ShoppingCategory {
+  VEGETABLE
+  MEAT
+  FISH
+  DAIRY
+  SEASONING
+  OTHER
+}
