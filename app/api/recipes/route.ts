@@ -3,15 +3,13 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   const recipes = await prisma.recipe.findMany({
+    where: { deletedAt: null },
     include: {
-      steps: true,
-      ingredients: {
-        include: {
-          shoppingItem: true,
-        },
+      steps: {
+        orderBy: { order: 'asc' },
       },
     },
   })
 
-  return NextResponse.json(recipes)
+  return Response.json(recipes)
 }
