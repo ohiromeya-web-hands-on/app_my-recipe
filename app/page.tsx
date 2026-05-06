@@ -1,54 +1,43 @@
-import { auth } from "@/auth";
-import { AuthActions } from "@/components/auth-actions";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { getTranslations } from "@/lib/i18n";
+'use client'
 
-const deploymentChecks = [
-  {
-    label: "Language",
-    value: "TypeScript",
-    note: "strict mode enabled"
-  },
-  {
-    label: "Framework",
-    value: "Next.js App Router",
-    note: "server component page"
-  },
-  {
-    label: "Authentication",
-    value: "Auth.js Google OAuth",
-    note: "JWT session / owner gate ready"
-  },
-  {
-    label: "Theme",
-    value: "next-themes",
-    note: "light / dark / system"
-  },
-  {
-    label: "Locale",
-    value: "locales/ja.json",
-    note: "Japanese copy loaded"
-  }
-];
+import { useEffect, useState } from 'react'
 
+export default function Page() {
+  const [recipes, setRecipes] = useState([])
 
-async function getRecipes() {
-  const res = await fetch('http://localhost:3000/api/recipes', {
-    cache: 'no-store',
-  });
-  return res.json();
-}
-
-export default async function Page() {
-  const recipes = await getRecipes();
+  useEffect(() => {
+    fetch('/api/recipes')
+      .then(res => res.json())
+      .then(data => setRecipes(data))
+  }, [])
 
   return (
-  <main style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
-    <h1 style={{ fontSize: '32px', marginBottom: '20px' }}>
-  レシピ一覧
-</h1>
+    <main style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
+      <h1 style={{ fontSize: '32px', marginBottom: '20px' }}>
+        レシピ一覧
+      </h1>
 
-    {recipes.map((recipe: any) => (
+      <form
+  onSubmit={async (e) => {
+    e.preventDefault()
+
+    const formData = new FormData(e.currentTarget)
+    const title = formData.get('title')
+    const steps = formData.get('steps')?.toString().split('\n')
+
+    await fetch('/api/recipes', {
+      method: 'POST',
+      body: JSON.stringify({ title, steps }),
+    })
+
+    location.reload()
+  }}
+>
+  <input name="title" placeholder="タイトル" />
+  <textarea name="steps" placeholder="手順（改行で区切る）"></textarea>
+  <button type="submit">追加</button>
+</form>
+{recipes.map((recipe: any) => (
   <div
     key={recipe.id}
     style={{
@@ -68,7 +57,7 @@ export default async function Page() {
       ))}
     </ul>
   </div>
-    ))}
-  </main>
-);
+))}
+</main>
+) 
 }
