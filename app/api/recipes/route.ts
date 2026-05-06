@@ -6,10 +6,10 @@ export async function GET() {
     where: { deletedAt: null },
     include: {
       steps: {
-        orderBy: { order: 'asc' },
-      },
-    },
+        orderBy: { order: 'asc' }
+      }
+    }
   })
 
-  return Response.json(recipes)
+  return NextResponse.json(recipes)
 }

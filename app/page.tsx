@@ -31,44 +31,44 @@ const deploymentChecks = [
   }
 ];
 
-export default async function Home() {
-  const session = await auth();
-  const { t } = getTranslations();
-  const isSignedIn = Boolean(session?.user);
+
+async function getRecipes() {
+  const res = await fetch('http://localhost:3000/api/recipes', {
+    cache: 'no-store',
+  });
+  return res.json();
+}
+
+export default async function Page() {
+  const recipes = await getRecipes();
 
   return (
-    <main className="page-shell">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">Deploy smoke test</p>
-          <h1>{t.appName}</h1>
-          <p className="lead">{t.tagline}</p>
-        </div>
-        <ThemeToggle />
-      </section>
+  <main style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
+    <h1 style={{ fontSize: '32px', marginBottom: '20px' }}>
+  レシピ一覧
+</h1>
 
-      <section className="status-grid" aria-label="環境資材チェック">
-        {deploymentChecks.map((item) => (
-          <article className="status-card" key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.note}</small>
-          </article>
-        ))}
-      </section>
+    {recipes.map((recipe: any) => (
+  <div
+    key={recipe.id}
+    style={{
+      marginBottom: '24px',
+      padding: '16px',
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+    }}
+  >
+    <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>
+      {recipe.title}
+    </h2>
 
-      <section className="auth-card" aria-label="認証チェック">
-        <div>
-          <span className="eyebrow">Auth</span>
-          <h2>{isSignedIn ? t.auth.signedIn : t.auth.signedOut}</h2>
-          <p>
-            {isSignedIn
-              ? `signed in as ${session?.user?.email ?? session?.user?.name ?? "owner"}`
-              : "Google OAuth credentials are read from the Vercel environment."}
-          </p>
-        </div>
-        <AuthActions isSignedIn={isSignedIn} />
-      </section>
-    </main>
-  );
+    <ul style={{ paddingLeft: '20px' }}>
+      {recipe.steps.map((step: any) => (
+        <li key={step.id}>{step.content}</li>
+      ))}
+    </ul>
+  </div>
+    ))}
+  </main>
+);
 }
