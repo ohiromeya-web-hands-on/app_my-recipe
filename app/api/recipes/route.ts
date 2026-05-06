@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
 
 export async function GET() {
   const recipes = await prisma.recipe.findMany({
@@ -16,6 +17,14 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const body = await req.json();
+  const session = await auth()
+
+if (session?.user?.id !== process.env.OWNER_GITHUB_ID) {
+  return NextResponse.json(
+    { ok: false, error: "Unauthorized" },
+    { status: 401 }
+  )
+}
 
   const recipe = await prisma.recipe.create({
     data: {
