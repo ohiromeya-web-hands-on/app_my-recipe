@@ -3,10 +3,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   const recipes = await prisma.recipe.findMany({
-    where: { deletedAt: null }
+    where: { deletedAt: null },
     include: {
-      ssteps: { orderBy: { order: 'asc' } ,
-     },
+      steps: {
+        orderBy: { order: 'asc' },
+      },
     },
   })
 
