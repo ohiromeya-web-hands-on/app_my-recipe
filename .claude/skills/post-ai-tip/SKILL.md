@@ -29,7 +29,7 @@ AIコーディングを効率化するTipsをSlackに投稿するskill。
 | **準備方法** | 導入手順（コマンド、設定、リンクなど） |
 | **備考** | 注意点・前提・出典など（任意、なければ省略） |
 
-⭐は点灯分だけ並べる（例: `⭐⭐⭐` で評価3）。
+⭐は5枠固定で点灯/消灯を区別する（例: 評価3 = `⭐⭐⭐☆☆`）。スケールが一目でわかるよう、必ず☆も含めて5文字で表記する。
 
 ## 手順
 
@@ -73,6 +73,7 @@ AIコーディングを効率化するTipsをSlackに投稿するskill。
 
 - ⚠️ があればドラフトを修正
 - ❓ が重要項目に残る場合はユーザに確認を求めるか、備考に「未検証」と明記
+- **重要項目（コマンド・URL・ツール名・「できること」の主張）に修正が入った場合は、事実関係レビューを再度実施する**（誤り→修正→新たな誤り、を防ぐため）
 - ✅ のみになったら次へ
 
 ### 4. プレビューと承認
@@ -85,12 +86,20 @@ AIコーディングを効率化するTipsをSlackに投稿するskill。
 
 承認されたら、ペイロードを `/tmp/slack-tip-payload.json` に書き出して投稿する（インラインJSONはエスケープ事故が起きやすいため）。
 
+**ペイロード生成は必ず Write tool を使う**。シェルヒアドキュメントや `echo` は `*`・日本語・引用符でエスケープ事故が起きやすいので使わない。
+
+投稿コマンド:
+
 ```bash
-SLACK_TIPS_WEBHOOK=$(grep '^SLACK_TIPS_WEBHOOK=' .env.local | cut -d '=' -f2-) \
-  && curl -sS -X POST -H 'Content-Type: application/json' \
-       --data @/tmp/slack-tip-payload.json \
-       "$SLACK_TIPS_WEBHOOK"
+REPO_ROOT=$(git rev-parse --show-toplevel)
+SLACK_TIPS_WEBHOOK=$(grep '^SLACK_TIPS_WEBHOOK=' "$REPO_ROOT/.env.local" | cut -d '=' -f2-)
+[ -z "$SLACK_TIPS_WEBHOOK" ] && { echo "SLACK_TIPS_WEBHOOK が .env.local に未設定"; exit 1; }
+curl -sS -X POST -H 'Content-Type: application/json' \
+     --data @/tmp/slack-tip-payload.json \
+     "$SLACK_TIPS_WEBHOOK"
 ```
+
+`git rev-parse --show-toplevel` でリポジトリルートを解決することで、サブディレクトリから呼ばれても確実に `.env.local` を見つけられる。URL未設定時は無音失敗ではなく明示エラーで止める。
 
 レスポンスが `ok` であることを確認してユーザに報告。失敗時はSlackのエラーメッセージをそのまま見せる。
 
@@ -105,9 +114,9 @@ SLACK_TIPS_WEBHOOK=$(grep '^SLACK_TIPS_WEBHOOK=' .env.local | cut -d '=' -f2-) \
   "blocks": [
     {"type": "header", "text": {"type": "plain_text", "text": "💡 <タイトル>"}},
     {"type": "section", "fields": [
-      {"type": "mrkdwn", "text": "*便利さ*\n<⭐の点灯分>"},
-      {"type": "mrkdwn", "text": "*導入のしやすさ*\n<⭐の点灯分>"},
-      {"type": "mrkdwn", "text": "*コンテキストコスパ*\n<⭐の点灯分>"}
+      {"type": "mrkdwn", "text": "*便利さ*\n<⭐5枠 例: ⭐⭐⭐☆☆>"},
+      {"type": "mrkdwn", "text": "*導入のしやすさ*\n<⭐5枠 例: ⭐⭐⭐☆☆>"},
+      {"type": "mrkdwn", "text": "*コンテキストコスパ*\n<⭐5枠 例: ⭐⭐⭐☆☆>"}
     ]},
     {"type": "section", "text": {"type": "mrkdwn", "text": "*できること*\n<本文>"}},
     {"type": "section", "text": {"type": "mrkdwn", "text": "*準備方法*\n<本文>"}},
@@ -121,9 +130,9 @@ SLACK_TIPS_WEBHOOK=$(grep '^SLACK_TIPS_WEBHOOK=' .env.local | cut -d '=' -f2-) \
 ### 例1: VSCodeのCodex拡張機能
 
 - タイトル: VSCodeのCodex拡張でGUI操作
-- 便利さ: ⭐⭐⭐⭐
-- 導入のしやすさ: ⭐⭐⭐⭐
-- コンテキストコスパ: ⭐⭐⭐
+- 便利さ: ⭐⭐⭐⭐☆
+- 導入のしやすさ: ⭐⭐⭐⭐☆
+- コンテキストコスパ: ⭐⭐⭐☆☆
 - できること: CLIではなくVSCodeのGUI上でCodexを操作できる。差分プレビューやファイル参照が視覚的に楽
 - 準備方法: VSCode拡張から「Codex」をインストール、APIキー設定
 - 備考: CLI慣れしている人にはCLIの方が速い場合もある
@@ -133,7 +142,7 @@ SLACK_TIPS_WEBHOOK=$(grep '^SLACK_TIPS_WEBHOOK=' .env.local | cut -d '=' -f2-) \
 - タイトル: gh CLIをinstallしてCodexからGitHubを操作
 - 便利さ: ⭐⭐⭐⭐⭐
 - 導入のしやすさ: ⭐⭐⭐⭐⭐
-- コンテキストコスパ: ⭐⭐⭐⭐
+- コンテキストコスパ: ⭐⭐⭐⭐☆
 - できること: CodexからPR作成・コメント取得・Issue操作などが可能になる
 - 準備方法: `brew install gh && gh auth login`
 - 備考: 初回の `gh auth login` のみ手動が必要
