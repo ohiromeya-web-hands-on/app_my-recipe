@@ -93,13 +93,18 @@ AIコーディングを効率化するTipsをSlackに投稿するskill。
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
 SLACK_TIPS_WEBHOOK=$(grep '^SLACK_TIPS_WEBHOOK=' "$REPO_ROOT/.env.local" | cut -d '=' -f2-)
+# .env.local が引用符付き (例: SLACK_TIPS_WEBHOOK="https://...") の場合に備えて前後の引用符を剥ぐ
+SLACK_TIPS_WEBHOOK="${SLACK_TIPS_WEBHOOK%\"}"; SLACK_TIPS_WEBHOOK="${SLACK_TIPS_WEBHOOK#\"}"
+SLACK_TIPS_WEBHOOK="${SLACK_TIPS_WEBHOOK%\'}"; SLACK_TIPS_WEBHOOK="${SLACK_TIPS_WEBHOOK#\'}"
 [ -z "$SLACK_TIPS_WEBHOOK" ] && { echo "SLACK_TIPS_WEBHOOK が .env.local に未設定"; exit 1; }
 curl -sS -X POST -H 'Content-Type: application/json' \
      --data @/tmp/slack-tip-payload.json \
      "$SLACK_TIPS_WEBHOOK"
 ```
 
-`git rev-parse --show-toplevel` でリポジトリルートを解決することで、サブディレクトリから呼ばれても確実に `.env.local` を見つけられる。URL未設定時は無音失敗ではなく明示エラーで止める。
+- `git rev-parse --show-toplevel` でリポジトリルートを解決することで、サブディレクトリから呼ばれても確実に `.env.local` を見つけられる
+- 値の前後の `"` / `'` を bash parameter expansion で剥がす。これがないと `.env.example` の `SLACK_TIPS_WEBHOOK=""` をコピーした空値が `""`（2文字）として残り空チェックをすり抜けたり、引用符付き URL が curl に literal で渡って `curl: (3)` で失敗する
+- URL未設定時は無音失敗ではなく明示エラーで止める
 
 レスポンスが `ok` であることを確認してユーザに報告。失敗時はSlackのエラーメッセージをそのまま見せる。
 
