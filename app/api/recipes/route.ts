@@ -16,15 +16,24 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const session = await auth()
+    const session = await auth()
+  const email = session?.user?.email?.toLowerCase()
 
-if (session?.user?.id !== process.env.OWNER_GITHUB_ID) {
-  return NextResponse.json(
-    { ok: false, error: "Unauthorized" },
-    { status: 401 }
+  const allowedOwnerEmails = new Set(
+    (process.env.OWNER_GOOGLE_EMAILS ?? '')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
   )
-}
+
+  if (!email || !allowedOwnerEmails.has(email)) {
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 },
+    )
+  }
+
+  const body = await req.json()
 
   const recipe = await prisma.recipe.create({
     data: {

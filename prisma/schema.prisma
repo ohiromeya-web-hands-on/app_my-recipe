@@ -22,7 +22,7 @@ model Recipe {
   steps     Step[]
   ingredients RecipeIngredient[]
   genres    RecipeGenre[]
-　mealTypes RecipeMealType[]
+  mealTypes RecipeMealType[]
 }
 
 model Step {
@@ -43,7 +43,7 @@ model ShoppingItem {
   name           String
   normalizedName String   @unique
   status   ShoppingStatus
-　category ShoppingCategory
+  category ShoppingCategory
   createdAt      DateTime @default(now())
   deletedAt      DateTime?
 

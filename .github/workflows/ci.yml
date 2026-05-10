@@ -29,14 +29,14 @@ jobs:
         run: npm run typecheck
 
       - name: Audit dependencies
-  　　　# TODO:
-  　　　# 現在のPRを通すため、一時的に `high` を使用しています。
-  　　　# 本来の `moderate` よりセキュリティ基準が下がっているため、
- 　　　 # 依存関係の脆弱性対応後に `moderate` へ戻す予定です。
+       # TODO:
+       # 現在のPRを通すため、一時的に `high` を使用しています。
+       # 本来の `moderate` よりセキュリティ基準が下がっているため、
+       # 依存関係の脆弱性対応後に `moderate` へ戻す予定です。
         run: npm audit --audit-level=high
       - name: Build
         run: npm run build
-    　　 env:
+        env:
           AUTH_SECRET: "ci-secret"
           AUTH_URL: "http://localhost:3000"
           GOOGLE_CLIENT_ID: "ci-client-id"
