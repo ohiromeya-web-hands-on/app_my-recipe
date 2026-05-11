@@ -33,12 +33,33 @@ export async function POST(req: Request) {
     )
   }
 
-  const body = await req.json()
+    const body = await req.json().catch(() => null)
+
+  const ALLOWED_CATEGORIES = ['MAIN', 'SIDE', 'SOUP', 'DESSERT', 'OTHER'] as const
+  type Category = (typeof ALLOWED_CATEGORIES)[number]
+  const isCategory = (v: unknown): v is Category =>
+    typeof v === 'string' && (ALLOWED_CATEGORIES as readonly string[]).includes(v)
+
+  if (
+    !body ||
+    typeof body.title !== 'string' ||
+    body.title.trim() === '' ||
+    !Array.isArray(body.steps) ||
+    body.steps.length === 0 ||
+    !body.steps.every((s: unknown) => typeof s === 'string' && s.trim() !== '')
+  ) {
+    return NextResponse.json(
+      { ok: false, error: 'Invalid payload' },
+      { status: 400 },
+    )
+  }
+
+  const category: Category = isCategory(body.category) ? body.category : 'MAIN'
 
   const recipe = await prisma.recipe.create({
     data: {
       title: body.title,
-      category: 'MAIN',
+      category,
       steps: {
         create: body.steps.map((step: string, index: number) => ({
           content: step,
@@ -46,7 +67,6 @@ export async function POST(req: Request) {
         })),
       },
     },
-  });
+  })
 
-  return NextResponse.json(recipe);
-}
+  return NextResponse.json(recipe)
