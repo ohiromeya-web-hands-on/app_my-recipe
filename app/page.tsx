@@ -1,74 +1,63 @@
-import { auth } from "@/auth";
-import { AuthActions } from "@/components/auth-actions";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { getTranslations } from "@/lib/i18n";
+'use client'
 
-const deploymentChecks = [
-  {
-    label: "Language",
-    value: "TypeScript",
-    note: "strict mode enabled"
-  },
-  {
-    label: "Framework",
-    value: "Next.js App Router",
-    note: "server component page"
-  },
-  {
-    label: "Authentication",
-    value: "Auth.js Google OAuth",
-    note: "JWT session / owner gate ready"
-  },
-  {
-    label: "Theme",
-    value: "next-themes",
-    note: "light / dark / system"
-  },
-  {
-    label: "Locale",
-    value: "locales/ja.json",
-    note: "Japanese copy loaded"
-  }
-];
+import { useEffect, useState } from 'react'
 
-export default async function Home() {
-  const session = await auth();
-  const { t } = getTranslations();
-  const isSignedIn = Boolean(session?.user);
+export default function Page() {
+  const [recipes, setRecipes] = useState([])
+
+  useEffect(() => {
+    fetch('/api/recipes')
+      .then(res => res.json())
+      .then(data => setRecipes(data))
+  }, [])
 
   return (
-    <main className="page-shell">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">Deploy smoke test</p>
-          <h1>{t.appName}</h1>
-          <p className="lead">{t.tagline}</p>
-        </div>
-        <ThemeToggle />
-      </section>
+    <main style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
+      <h1 style={{ fontSize: '32px', marginBottom: '20px' }}>
+        レシピ一覧
+      </h1>
 
-      <section className="status-grid" aria-label="環境資材チェック">
-        {deploymentChecks.map((item) => (
-          <article className="status-card" key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.note}</small>
-          </article>
-        ))}
-      </section>
+      <form
+  onSubmit={async (e) => {
+    e.preventDefault()
 
-      <section className="auth-card" aria-label="認証チェック">
-        <div>
-          <span className="eyebrow">Auth</span>
-          <h2>{isSignedIn ? t.auth.signedIn : t.auth.signedOut}</h2>
-          <p>
-            {isSignedIn
-              ? `signed in as ${session?.user?.email ?? session?.user?.name ?? "owner"}`
-              : "Google OAuth credentials are read from the Vercel environment."}
-          </p>
-        </div>
-        <AuthActions isSignedIn={isSignedIn} />
-      </section>
-    </main>
-  );
+    const formData = new FormData(e.currentTarget)
+    const title = formData.get('title')
+    const steps = formData.get('steps')?.toString().split('\n')
+
+    await fetch('/api/recipes', {
+      method: 'POST',
+      body: JSON.stringify({ title, steps }),
+    })
+
+    location.reload()
+  }}
+>
+  <input name="title" placeholder="タイトル" />
+  <textarea name="steps" placeholder="手順（改行で区切る）"></textarea>
+  <button type="submit">追加</button>
+</form>
+{recipes.map((recipe: any) => (
+  <div
+    key={recipe.id}
+    style={{
+      marginBottom: '24px',
+      padding: '16px',
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+    }}
+  >
+    <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>
+      {recipe.title}
+    </h2>
+
+    <ul style={{ paddingLeft: '20px' }}>
+      {recipe.steps.map((step: any) => (
+        <li key={step.id}>{step.content}</li>
+      ))}
+    </ul>
+  </div>
+))}
+</main>
+) 
 }
