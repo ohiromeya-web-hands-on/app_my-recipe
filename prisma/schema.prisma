@@ -14,7 +14,16 @@ datasource db {
 model Recipe {
   id        String   @id @default(cuid())
   title     String
+  emoji     String?
+  imageUrl  String?
+  imageAlt  String?
   category RecipeCategory
+  difficulty Int     @default(1)
+  isFavorite Boolean @default(false)
+  referenceUrl String?
+  servings  Int?
+  memoMarkdown String @default("")
+  savedAt   DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
@@ -44,7 +53,9 @@ model ShoppingItem {
   normalizedName String   @unique
   status   ShoppingStatus
   category ShoppingCategory
+  purchased      Boolean  @default(false)
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
 
   recipeIngredients RecipeIngredient[]
@@ -53,7 +64,7 @@ model ShoppingItem {
 model RecipeIngredient {
   id             String @id @default(cuid())
   recipeId       String
-  shoppingItemId String　//
+  shoppingItemId String
   quantity       String?
 
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)

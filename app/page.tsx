@@ -1,63 +1,97 @@
-'use client'
+import Link from "next/link";
+import { RecipeCard } from "@/components/recipe-card";
+import {
+  listLatestPublishedRecipes,
+  listNeededShoppingItems,
+} from "@/features/recipes/queries";
+import {
+  shoppingCategoryLabel,
+  shoppingStatusLabel,
+} from "@/features/recipes/view-labels";
 
-import { useEffect, useState } from 'react'
+export const dynamic = "force-dynamic";
 
-export default function Page() {
-  const [recipes, setRecipes] = useState([])
-
-  useEffect(() => {
-    fetch('/api/recipes')
-      .then(res => res.json())
-      .then(data => setRecipes(data))
-  }, [])
+export default async function Page() {
+  const [recipes, shoppingItems] = await Promise.all([
+    listLatestPublishedRecipes(6),
+    listNeededShoppingItems(10),
+  ]);
 
   return (
-    <main style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '32px', marginBottom: '20px' }}>
-        レシピ一覧
-      </h1>
+    <main className="page-shell">
+      <section className="dashboard-hero">
+        <div>
+          <span className="eyebrow">MyKitchen</span>
+          <h1>今日の台所</h1>
+          <p className="lead">
+            保存したレシピと買い物候補を、実データからすぐ確認できます。
+          </p>
+        </div>
+        <Link className="button" href="/recipes">
+          レシピを見る
+        </Link>
+      </section>
 
-      <form
-  onSubmit={async (e) => {
-    e.preventDefault()
+      <div className="dashboard-grid">
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Latest recipes</span>
+              <h2>最新レシピ</h2>
+            </div>
+            <Link href="/recipes">すべて見る</Link>
+          </div>
 
-    const formData = new FormData(e.currentTarget)
-    const title = formData.get('title')
-    const steps = formData.get('steps')?.toString().split('\n')
+          {recipes.length > 0 ? (
+            <div className="recipe-grid compact">
+              {recipes.map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <strong>レシピはまだありません</strong>
+              <p>登録されたレシピがここに表示されます。</p>
+            </div>
+          )}
+        </section>
 
-    await fetch('/api/recipes', {
-      method: 'POST',
-      body: JSON.stringify({ title, steps }),
-    })
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Shopping</span>
+              <h2>未購入リスト</h2>
+            </div>
+          </div>
 
-    location.reload()
-  }}
->
-  <input name="title" placeholder="タイトル" />
-  <textarea name="steps" placeholder="手順（改行で区切る）"></textarea>
-  <button type="submit">追加</button>
-</form>
-{recipes.map((recipe: any) => (
-  <div
-    key={recipe.id}
-    style={{
-      marginBottom: '24px',
-      padding: '16px',
-      border: '1px solid #ccc',
-      borderRadius: '8px',
-    }}
-  >
-    <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>
-      {recipe.title}
-    </h2>
-
-    <ul style={{ paddingLeft: '20px' }}>
-      {recipe.steps.map((step: any) => (
-        <li key={step.id}>{step.content}</li>
-      ))}
-    </ul>
-  </div>
-))}
-</main>
-) 
+          {shoppingItems.length > 0 ? (
+            <ol className="shopping-list">
+              {shoppingItems.map((item) => (
+                <li key={item.id}>
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>
+                      {shoppingCategoryLabel(item.category)} /{" "}
+                      {shoppingStatusLabel(item.status)}
+                    </span>
+                  </div>
+                  <small>
+                    {item.recipeIngredients
+                      .slice(0, 2)
+                      .map(({ recipe }) => recipe.title)
+                      .join("、") || "単独項目"}
+                  </small>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <div className="empty-state">
+              <strong>未購入の項目はありません</strong>
+              <p>買い物が必要な材料がここに表示されます。</p>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
 }
