@@ -58,7 +58,9 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
             <h1>{recipe.title}</h1>
             <div className="detail-meta">
               <span>{difficultyLabel(recipe.difficulty)}</span>
-              <span>{recipe.servings ? `${recipe.servings}人分` : "人数未設定"}</span>
+              <span>
+                {recipe.servings != null ? `${recipe.servings}人分` : "人数未設定"}
+              </span>
               {recipe.isFavorite ? <span>お気に入り</span> : null}
             </div>
           </div>

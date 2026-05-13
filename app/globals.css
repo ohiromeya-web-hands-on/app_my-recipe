@@ -505,12 +505,15 @@ a {
     padding: 24px 0;
   }
 
+  .hero,
+  .auth-card,
   .dashboard-hero,
   .page-header,
   .recipe-detail-header {
     padding: 24px;
   }
 
+  .hero,
   .dashboard-hero,
   .dashboard-grid,
   .recipe-detail-header,
@@ -518,9 +521,22 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .hero {
+    display: block;
+  }
+
   .dashboard-hero {
     display: grid;
     align-items: start;
+  }
+
+  .theme-panel {
+    margin-top: 16px;
+  }
+
+  .auth-card {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .recipe-detail-image {
@@ -546,26 +562,6 @@ a {
 
   .dashboard-hero .button {
     width: 100%;
-  }
-}
-
-@media (max-width: 860px) {
-  .hero,
-  .auth-card {
-    grid-template-columns: 1fr;
-  }
-
-  .hero {
-    display: block;
-  }
-
-  .theme-panel {
-    margin-top: 16px;
-  }
-
-  .auth-card {
-    align-items: stretch;
-    flex-direction: column;
   }
 }
 
