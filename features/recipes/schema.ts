@@ -1,0 +1,87 @@
+import {
+  MealType,
+  RecipeCategory,
+  RecipeGenreValue,
+} from "@prisma/client";
+import { z } from "zod";
+
+const optionalUrl = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => value || null)
+  .pipe(z.string().url("URL の形式で入力してください").nullable())
+  .refine(
+    (value) => value == null || value.startsWith("http://") || value.startsWith("https://"),
+    "http または https の URL を入力してください",
+  );
+
+const optionalShortText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `${max}文字以内で入力してください`)
+    .optional()
+    .transform((value) => value || null);
+
+export const recipeStepSchema = z.object({
+  id: z.string().optional(),
+  content: z
+    .string()
+    .trim()
+    .min(1, "手順を入力してください")
+    .max(500, "手順は500文字以内で入力してください"),
+});
+
+export const recipeFormSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "レシピ名を入力してください")
+    .max(80, "レシピ名は80文字以内で入力してください"),
+  emoji: optionalShortText(8),
+  imageUrl: optionalUrl,
+  imageAlt: optionalShortText(80),
+  category: z.nativeEnum(RecipeCategory, {
+    error: "カテゴリーを選択してください",
+  }),
+  genres: z.array(z.nativeEnum(RecipeGenreValue)).max(8).default([]),
+  mealTypes: z.array(z.nativeEnum(MealType)).max(8).default([]),
+  difficulty: z.coerce
+    .number()
+    .int("難易度は整数で入力してください")
+    .min(1, "難易度は1以上で入力してください")
+    .max(5, "難易度は5以下で入力してください"),
+  servings: z.preprocess(
+    (value) => (value === "" || value == null ? null : value),
+    z.coerce
+      .number()
+      .int("人数は整数で入力してください")
+      .min(1, "人数は1以上で入力してください")
+      .max(20, "人数は20以下で入力してください")
+      .nullable(),
+  ),
+  referenceUrl: optionalUrl,
+  memoMarkdown: z.string().max(5000, "メモは5000文字以内で入力してください").default(""),
+  savedAt: z.coerce.date({
+    error: "保存日を入力してください",
+  }),
+  isFavorite: z.boolean().default(false),
+  steps: z.array(recipeStepSchema).max(50, "手順は50件以内で入力してください").default([]),
+});
+
+export const recipeUpdateSchema = recipeFormSchema.extend({
+  id: z.string().min(1),
+  updatedAt: z.coerce.date({
+    error: "更新日時が不正です",
+  }),
+});
+
+export type RecipeFormInput = z.input<typeof recipeFormSchema>;
+export type RecipeFormValues = z.output<typeof recipeFormSchema>;
+export type RecipeUpdateInput = z.input<typeof recipeUpdateSchema>;
+export type RecipeUpdateValues = z.output<typeof recipeUpdateSchema>;
+
+export const recipeCategoryOptions = Object.values(RecipeCategory);
+export const recipeGenreOptions = Object.values(RecipeGenreValue);
+export const mealTypeOptions = Object.values(MealType);

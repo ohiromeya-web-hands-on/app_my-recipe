@@ -54,6 +54,13 @@ export const getPublishedRecipeById = cache(async (id: string) => {
   });
 });
 
+export const getEditableRecipeById = cache(async (id: string) => {
+  return prisma.recipe.findFirst({
+    where: { id, deletedAt: null },
+    include: recipeInclude,
+  });
+});
+
 export async function listNeededShoppingItems(take = 10) {
   return prisma.shoppingItem.findMany({
     where: {
