@@ -12,8 +12,12 @@ export default async function OwnerLayout({
   try {
     await requireOwner();
   } catch (error) {
-    if (isOwnerAuthError(error) && error.code === "UNAUTHORIZED") {
-      redirect("/api/auth/signin");
+    if (isOwnerAuthError(error)) {
+      if (error.code === "UNAUTHORIZED") {
+        redirect("/api/auth/signin");
+      }
+
+      redirect("/api/auth/signin?error=AccessDenied");
     }
 
     throw error;
