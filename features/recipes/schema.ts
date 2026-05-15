@@ -2,12 +2,14 @@ import {
   MealType,
   RecipeCategory,
   RecipeGenreValue,
+  ShoppingCategory,
 } from "@prisma/client";
 import { z } from "zod";
 
 export const recipeCategoryOptions = Object.values(RecipeCategory);
 export const recipeGenreOptions = Object.values(RecipeGenreValue);
 export const mealTypeOptions = Object.values(MealType);
+export const shoppingCategoryOptions = Object.values(ShoppingCategory);
 
 const optionalUrl = z
   .string()
@@ -35,6 +37,18 @@ export const recipeStepSchema = z.object({
     .min(1, "手順を入力してください")
     .max(500, "手順は500文字以内で入力してください"),
 });
+
+export const recipeIngredientSchema = z
+  .object({
+    shoppingItemId: z.string().optional(),
+    name: z.string().trim().max(40, "材料名は40文字以内で入力してください").optional(),
+    amountMemo: z.string().trim().max(80, "分量メモは80文字以内で入力してください").optional(),
+    category: z.nativeEnum(ShoppingCategory).default(ShoppingCategory.OTHER),
+  })
+  .refine(
+    (value) => Boolean(value.shoppingItemId || value.name?.trim()),
+    "材料名を入力するか、候補から材料を選択してください",
+  );
 
 export const recipeFormSchema = z.object({
   title: z
@@ -71,6 +85,10 @@ export const recipeFormSchema = z.object({
   }),
   isFavorite: z.boolean().default(false),
   steps: z.array(recipeStepSchema).max(50, "手順は50件以内で入力してください").default([]),
+  ingredients: z
+    .array(recipeIngredientSchema)
+    .max(80, "材料は80件以内で入力してください")
+    .default([]),
 });
 
 export const recipeUpdateSchema = recipeFormSchema.extend({

@@ -31,6 +31,7 @@ export default function NewRecipePage() {
           savedAt: todayInputValue(),
           isFavorite: false,
           steps: [{ content: "" }],
+          ingredients: [],
         }}
       />
     </main>

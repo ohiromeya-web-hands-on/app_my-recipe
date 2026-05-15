@@ -18,14 +18,20 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ShoppingCategory } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   useFieldArray,
   useForm,
+  useWatch,
   type FieldErrors,
   type SubmitHandler,
 } from "react-hook-form";
+import {
+  IngredientPicker,
+  type IngredientPickerValue,
+} from "@/components/recipes/ingredient-picker";
 import {
   createRecipe,
   updateRecipe,
@@ -60,6 +66,7 @@ type RecipeFormValues = {
   savedAt: string;
   isFavorite: boolean;
   steps: { content: string }[];
+  ingredients: IngredientPickerValue[];
 };
 
 type RecipeFormProps = {
@@ -203,15 +210,36 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
     handleSubmit,
     register,
     reset,
+    setValue,
   } = useForm<RecipeFormValues>({
     resolver,
     defaultValues,
   });
 
-  const { fields, append, remove, move } = useFieldArray({
+  const {
+    fields: stepFields,
+    append: appendStep,
+    remove: removeStep,
+    move,
+  } = useFieldArray({
     control,
     name: "steps",
   });
+
+  const {
+    fields: ingredientFields,
+    append: appendIngredient,
+    remove: removeIngredient,
+  } = useFieldArray({
+    control,
+    name: "ingredients",
+  });
+
+  const ingredients =
+    useWatch({
+      control,
+      name: "ingredients",
+    }) ?? [];
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -234,7 +262,7 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [isDirty]);
 
-  const stepIds = fields.map((field) => field.id);
+  const stepIds = stepFields.map((field) => field.id);
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -242,8 +270,8 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
       return;
     }
 
-    const oldIndex = fields.findIndex((field) => field.id === active.id);
-    const newIndex = fields.findIndex((field) => field.id === over.id);
+    const oldIndex = stepFields.findIndex((field) => field.id === active.id);
+    const newIndex = stepFields.findIndex((field) => field.id === over.id);
     move(oldIndex, newIndex);
   };
 
@@ -394,7 +422,7 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
           <button
             type="button"
             className="secondary-button"
-            onClick={() => append({ content: "" })}
+            onClick={() => appendStep({ content: "" })}
           >
             手順を追加
           </button>
@@ -407,19 +435,67 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
         >
           <SortableContext items={stepIds} strategy={verticalListSortingStrategy}>
             <ol className="sortable-step-list">
-              {fields.map((field, index) => (
+              {stepFields.map((field, index) => (
                 <SortableStep
                   key={field.id}
                   fieldId={field.id}
                   index={index}
                   register={register}
                   error={errors.steps?.[index]?.content?.message}
-                  onRemove={() => remove(index)}
+                  onRemove={() => removeStep(index)}
                 />
               ))}
             </ol>
           </SortableContext>
         </DndContext>
+      </section>
+
+      <section className="form-section">
+        <div className="section-heading compact-heading">
+          <h2>材料</h2>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() =>
+              appendIngredient({
+                name: "",
+                amountMemo: "",
+                category: ShoppingCategory.OTHER,
+              })
+            }
+          >
+            材料を追加
+          </button>
+        </div>
+        {ingredientFields.length > 0 ? (
+          <div className="ingredient-picker-list">
+            {ingredientFields.map((field, index) => (
+              <IngredientPicker
+                key={field.id}
+                index={index}
+                value={
+                  ingredients[index] ?? {
+                    name: "",
+                    amountMemo: "",
+                    category: ShoppingCategory.OTHER,
+                  }
+                }
+                onChange={(value) =>
+                  setValue(`ingredients.${index}`, value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                onRemove={() => removeIngredient(index)}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="muted-text">材料はまだ追加されていません。</p>
+        )}
+        {errors.ingredients?.message ? (
+          <p className="field-error">{errors.ingredients.message}</p>
+        ) : null}
       </section>
 
       <section className="form-section">

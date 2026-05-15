@@ -53,6 +53,12 @@ export default async function EditRecipePage({ params }: EditRecipePageProps) {
             recipe.steps.length > 0
               ? recipe.steps.map((step) => ({ content: step.content }))
               : [{ content: "" }],
+          ingredients: recipe.ingredients.map((ingredient) => ({
+            shoppingItemId: ingredient.shoppingItem.id,
+            name: ingredient.shoppingItem.name,
+            amountMemo: ingredient.quantity ?? "",
+            category: ingredient.shoppingItem.category,
+          })),
         }}
       />
     </main>

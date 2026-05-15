@@ -1,5 +1,7 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
+import { ShoppingStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { ApiResult } from "@/lib/result";
@@ -13,7 +15,9 @@ import {
   recipeUpdateSchema,
   type RecipeFormInput,
   type RecipeUpdateInput,
+  type RecipeFormValues,
 } from "@/features/recipes/schema";
+import { normalizeShoppingItemName } from "@/lib/normalize";
 
 type RecipeActionData = {
   id: string;
@@ -53,11 +57,78 @@ function notFoundError(message = "レシピが見つかりません"): ApiResult
   };
 }
 
+function conflictError(message: string): ApiResult<never> {
+  return {
+    ok: false,
+    error: {
+      code: "CONFLICT",
+      message,
+    },
+  };
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002",
+  );
+}
+
 function mapSteps(steps: { content: string }[]) {
   return steps.map((step, index) => ({
     content: step.content,
     order: (index + 1) * 10,
   }));
+}
+
+async function createRecipeIngredients(
+  tx: Prisma.TransactionClient,
+  recipeId: string,
+  ingredients: RecipeFormValues["ingredients"],
+) {
+  for (const ingredient of ingredients) {
+    const amountMemo = ingredient.amountMemo?.trim() || null;
+    let shoppingItemId = ingredient.shoppingItemId;
+
+    if (!shoppingItemId) {
+      const name = ingredient.name?.trim() ?? "";
+      const normalizedName = normalizeShoppingItemName(name);
+      const existing = await tx.shoppingItem.findUnique({
+        where: { normalizedName },
+        select: { id: true },
+      });
+
+      if (existing) {
+        return {
+          status: "conflict" as const,
+          message: `「${name}」は既に買い物リストにあります。候補から選択してください。`,
+        };
+      }
+
+      const shoppingItem = await tx.shoppingItem.create({
+        data: {
+          name,
+          normalizedName,
+          status: ShoppingStatus.NEED,
+          category: ingredient.category,
+        },
+        select: { id: true },
+      });
+      shoppingItemId = shoppingItem.id;
+    }
+
+    await tx.recipeIngredient.create({
+      data: {
+        recipeId,
+        shoppingItemId,
+        quantity: amountMemo,
+      },
+    });
+  }
+
+  return { status: "ok" as const };
 }
 
 async function getLatestRecipeSnapshot(id: string) {
@@ -89,34 +160,51 @@ export async function createRecipe(input: RecipeFormInput): Promise<ApiResult<Re
     }
 
     const values = parsed.data;
-    const recipe = await prisma.recipe.create({
-      data: {
-        title: values.title,
-        emoji: values.emoji,
-        imageUrl: values.imageUrl,
-        imageAlt: values.imageAlt,
-        category: values.category,
-        difficulty: values.difficulty,
-        isFavorite: values.isFavorite,
-        referenceUrl: values.referenceUrl,
-        servings: values.servings ?? null,
-        memoMarkdown: values.memoMarkdown,
-        savedAt: values.savedAt,
-        genres: {
-          create: values.genres.map((genre) => ({ genre })),
+    const result = await prisma.$transaction(async (tx) => {
+      const recipe = await tx.recipe.create({
+        data: {
+          title: values.title,
+          emoji: values.emoji,
+          imageUrl: values.imageUrl,
+          imageAlt: values.imageAlt,
+          category: values.category,
+          difficulty: values.difficulty,
+          isFavorite: values.isFavorite,
+          referenceUrl: values.referenceUrl,
+          servings: values.servings ?? null,
+          memoMarkdown: values.memoMarkdown,
+          savedAt: values.savedAt,
+          genres: {
+            create: values.genres.map((genre) => ({ genre })),
+          },
+          mealTypes: {
+            create: values.mealTypes.map((mealType) => ({ mealType })),
+          },
+          steps: {
+            create: mapSteps(values.steps),
+          },
         },
-        mealTypes: {
-          create: values.mealTypes.map((mealType) => ({ mealType })),
+        select: {
+          id: true,
+          updatedAt: true,
         },
-        steps: {
-          create: mapSteps(values.steps),
-        },
-      },
-      select: {
-        id: true,
-        updatedAt: true,
-      },
+      });
+
+      const ingredientsResult = await createRecipeIngredients(
+        tx,
+        recipe.id,
+        values.ingredients,
+      );
+      if (ingredientsResult.status === "conflict") {
+        return ingredientsResult;
+      }
+
+      return { status: "created" as const, recipe };
     });
+
+    if (result.status === "conflict") {
+      return conflictError(result.message);
+    }
 
     revalidatePath("/");
     revalidatePath("/recipes");
@@ -124,13 +212,17 @@ export async function createRecipe(input: RecipeFormInput): Promise<ApiResult<Re
     return {
       ok: true,
       data: {
-        id: recipe.id,
-        updatedAt: recipe.updatedAt.toISOString(),
+        id: result.recipe.id,
+        updatedAt: result.recipe.updatedAt.toISOString(),
       },
     };
   } catch (error) {
     if (isOwnerAuthError(error)) {
       return ownerAuthErrorResult(error);
+    }
+
+    if (isUniqueConstraintError(error)) {
+      return conflictError("同じ名前の材料が既にあります。候補から選択してください。");
     }
 
     console.error("createRecipe failed", error);
@@ -168,6 +260,7 @@ export async function updateRecipe(
       await tx.recipeGenre.deleteMany({ where: { recipeId: values.id } });
       await tx.recipeMealType.deleteMany({ where: { recipeId: values.id } });
       await tx.step.deleteMany({ where: { recipeId: values.id } });
+      await tx.recipeIngredient.deleteMany({ where: { recipeId: values.id } });
 
       const recipe = await tx.recipe.update({
         where: { id: values.id },
@@ -199,6 +292,15 @@ export async function updateRecipe(
         },
       });
 
+      const ingredientsResult = await createRecipeIngredients(
+        tx,
+        values.id,
+        values.ingredients,
+      );
+      if (ingredientsResult.status === "conflict") {
+        return ingredientsResult;
+      }
+
       return { status: "updated" as const, recipe };
     });
 
@@ -207,6 +309,10 @@ export async function updateRecipe(
     }
 
     if (result.status === "conflict") {
+      if ("message" in result) {
+        return conflictError(result.message);
+      }
+
       return {
         ok: false,
         error: {
@@ -234,6 +340,10 @@ export async function updateRecipe(
   } catch (error) {
     if (isOwnerAuthError(error)) {
       return ownerAuthErrorResult(error);
+    }
+
+    if (isUniqueConstraintError(error)) {
+      return conflictError("同じ名前の材料が既にあります。候補から選択してください。");
     }
 
     console.error("updateRecipe failed", error);
