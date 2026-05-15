@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { RecipeForm } from "@/components/recipes/recipe-form";
+import { dateInputValue } from "@/features/recipes/date";
 import { getEditableRecipeById } from "@/features/recipes/queries";
 
 type EditRecipePageProps = {
@@ -13,21 +14,6 @@ export async function generateMetadata({ params }: EditRecipePageProps) {
   return {
     title: recipe ? `${recipe.title}を編集 | MyKitchen` : "レシピ編集 | MyKitchen"
   };
-}
-
-function dateInputValue(date: Date) {
-  const parts = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-
-  const year = parts.find((part) => part.type === "year")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-
-  return `${year}-${month}-${day}`;
 }
 
 export default async function EditRecipePage({ params }: EditRecipePageProps) {

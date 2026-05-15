@@ -1,28 +1,10 @@
 import { RecipeCategory } from "@prisma/client";
 import { RecipeForm } from "@/components/recipes/recipe-form";
+import { todayInputValue } from "@/features/recipes/date";
 
 export const metadata = {
   title: "新しいレシピ | MyKitchen"
 };
-
-function todayInputValue() {
-  return dateInputValue(new Date());
-}
-
-function dateInputValue(date: Date) {
-  const parts = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-
-  const year = parts.find((part) => part.type === "year")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-
-  return `${year}-${month}-${day}`;
-}
 
 export default function NewRecipePage() {
   return (

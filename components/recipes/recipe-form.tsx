@@ -5,6 +5,7 @@ import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
+  type Announcements,
   type DragEndEvent,
   useSensor,
   useSensors,
@@ -71,6 +72,29 @@ type ConflictDetails = {
     title?: string | null;
     updatedAt?: string | null;
   } | null;
+};
+
+const stepAnnouncements: Announcements = {
+  onDragStart({ active }) {
+    return `${active.data.current?.sortable?.index + 1}番目の手順を選択しました。上下キーで移動し、スペースキーで確定します。`;
+  },
+  onDragOver({ active, over }) {
+    if (!over) {
+      return;
+    }
+
+    return `${active.data.current?.sortable?.index + 1}番目の手順を${over.data.current?.sortable?.index + 1}番目へ移動中です。`;
+  },
+  onDragEnd({ active, over }) {
+    if (!over) {
+      return "手順の並べ替えを終了しました。";
+    }
+
+    return `${active.data.current?.sortable?.index + 1}番目の手順を${over.data.current?.sortable?.index + 1}番目へ移動しました。`;
+  },
+  onDragCancel() {
+    return "手順の並べ替えをキャンセルしました。";
+  },
 };
 
 function fieldError(errors: FieldErrors<RecipeFormValues>, name: keyof RecipeFormValues) {
@@ -375,7 +399,12 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
             手順を追加
           </button>
         </div>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <DndContext
+          accessibility={{ announcements: stepAnnouncements }}
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
           <SortableContext items={stepIds} strategy={verticalListSortingStrategy}>
             <ol className="sortable-step-list">
               {fields.map((field, index) => (

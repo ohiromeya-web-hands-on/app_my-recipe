@@ -20,6 +20,8 @@ type RecipeActionData = {
   updatedAt: string;
 };
 
+const RESTORE_WINDOW_MS = 5 * 60 * 1000;
+
 function validationError(details: unknown): ApiResult<never> {
   return {
     ok: false,
@@ -61,10 +63,9 @@ function mapSteps(steps: { content: string }[]) {
 async function getLatestRecipeSnapshot(id: string) {
   const recipe = await prisma.recipe.findUnique({
     where: { id },
-    include: {
-      genres: { orderBy: { id: "asc" } },
-      mealTypes: { orderBy: { id: "asc" } },
-      steps: { orderBy: { order: "asc" } },
+    select: {
+      title: true,
+      updatedAt: true,
     },
   });
 
@@ -73,16 +74,8 @@ async function getLatestRecipeSnapshot(id: string) {
   }
 
   return {
-    id: recipe.id,
     title: recipe.title,
-    category: recipe.category,
-    difficulty: recipe.difficulty,
-    servings: recipe.servings,
-    memoMarkdown: recipe.memoMarkdown,
     updatedAt: recipe.updatedAt.toISOString(),
-    genres: recipe.genres.map((genre) => genre.genre),
-    mealTypes: recipe.mealTypes.map((mealType) => mealType.mealType),
-    steps: recipe.steps.map((step) => step.content),
   };
 }
 
@@ -298,8 +291,9 @@ export async function restoreRecipe(id: string): Promise<ApiResult<RecipeActionD
     await requireOwner();
 
     const recipe = await prisma.$transaction(async (tx) => {
+      const restorableSince = new Date(Date.now() - RESTORE_WINDOW_MS);
       const result = await tx.recipe.updateMany({
-        where: { id, deletedAt: { not: null } },
+        where: { id, deletedAt: { gte: restorableSince } },
         data: { deletedAt: null },
       });
 
