@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/auth'
+import {
+  isOwnerAuthError,
+  ownerAuthErrorResult,
+  requireOwner,
+} from '@/features/auth/require-owner'
 
 export async function GET() {
   const recipes = await prisma.recipe.findMany({
@@ -16,24 +20,19 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-    const session = await auth()
-  const email = session?.user?.email?.toLowerCase()
+  try {
+    await requireOwner()
+  } catch (error) {
+    if (isOwnerAuthError(error)) {
+      return NextResponse.json(ownerAuthErrorResult(error), {
+        status: error.status,
+      })
+    }
 
-  const allowedOwnerEmails = new Set(
-    (process.env.OWNER_GOOGLE_EMAILS ?? '')
-      .split(',')
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean),
-  )
-
-  if (!email || !allowedOwnerEmails.has(email)) {
-    return NextResponse.json(
-      { ok: false, error: 'Unauthorized' },
-      { status: 401 },
-    )
+    throw error
   }
 
-    const body = await req.json().catch(() => null)
+  const body = await req.json().catch(() => null)
 
   const ALLOWED_CATEGORIES = ['MAIN', 'SIDE', 'SOUP', 'DESSERT', 'OTHER'] as const
   type Category = (typeof ALLOWED_CATEGORIES)[number]
@@ -70,4 +69,4 @@ export async function POST(req: Request) {
   })
 
   return NextResponse.json(recipe)
-  }
+}

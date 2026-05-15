@@ -1,11 +1,15 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
-function getAllowedOwnerEmails() {
+export function normalizeOwnerEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+export function getAllowedOwnerEmails() {
   return new Set(
     (process.env.OWNER_GOOGLE_EMAILS ?? "")
       .split(",")
-      .map((email) => email.trim().toLowerCase())
+      .map(normalizeOwnerEmail)
       .filter(Boolean)
   );
 }
@@ -24,7 +28,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ profile }) {
       const allowedEmails = getAllowedOwnerEmails();
-      const profileEmail = profile?.email?.toLowerCase();
+      const profileEmail = profile?.email
+        ? normalizeOwnerEmail(profile.email)
+        : null;
 
       if (!profileEmail || !profile?.email_verified || allowedEmails.size === 0) {
         return false;

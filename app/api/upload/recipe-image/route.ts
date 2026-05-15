@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import {
+  isOwnerAuthError,
+  ownerAuthErrorResult,
+  requireOwner
+} from "@/features/auth/require-owner";
 
 export async function POST() {
-  const session = await auth();
+  try {
+    await requireOwner();
+  } catch (error) {
+    if (isOwnerAuthError(error)) {
+      return NextResponse.json(ownerAuthErrorResult(error), {
+        status: error.status
+      });
+    }
 
-  if (!session?.user) {
-    return NextResponse.json(
-      { ok: false, error: { code: "UNAUTHORIZED", message: "Sign in required" } },
-      { status: 401 }
-    );
+    throw error;
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
