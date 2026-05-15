@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import { auth, getAllowedOwnerEmails, normalizeOwnerEmail } from "@/auth";
+import { RecipeOwnerActions } from "@/components/recipes/recipe-owner-actions";
 import { getPublishedRecipeById } from "@/features/recipes/queries";
 import {
   categoryLabel,
@@ -39,17 +41,22 @@ export async function generateMetadata({ params }: RecipeDetailPageProps) {
 
 export default async function RecipeDetailPage({ params }: RecipeDetailPageProps) {
   const { id } = await params;
-  const recipe = await getPublishedRecipeById(id);
+  const [recipe, session] = await Promise.all([getPublishedRecipeById(id), auth()]);
 
   if (!recipe) {
     notFound();
   }
+
+  const isOwner =
+    session?.user?.email != null &&
+    getAllowedOwnerEmails().has(normalizeOwnerEmail(session.user.email));
 
   return (
     <main className="page-shell recipe-detail-shell">
       <Link className="back-link" href="/recipes">
         レシピ一覧へ戻る
       </Link>
+      {isOwner ? <RecipeOwnerActions recipeId={recipe.id} /> : null}
 
       <article className="recipe-detail">
         <header className="recipe-detail-header">
