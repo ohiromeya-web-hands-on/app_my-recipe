@@ -41,6 +41,16 @@ function internalError(): ApiResult<never> {
   };
 }
 
+function notFoundError(message = "レシピが見つかりません"): ApiResult<never> {
+  return {
+    ok: false,
+    error: {
+      code: "NOT_FOUND",
+      message,
+    },
+  };
+}
+
 function mapSteps(steps: { content: string }[]) {
   return steps.map((step, index) => ({
     content: step.content,
@@ -130,6 +140,7 @@ export async function createRecipe(input: RecipeFormInput): Promise<ApiResult<Re
       return ownerAuthErrorResult(error);
     }
 
+    console.error("createRecipe failed", error);
     return internalError();
   }
 }
@@ -199,13 +210,7 @@ export async function updateRecipe(
     });
 
     if (result.status === "not-found") {
-      return {
-        ok: false,
-        error: {
-          code: "NOT_FOUND",
-          message: "レシピが見つかりません",
-        },
-      };
+      return notFoundError();
     }
 
     if (result.status === "conflict") {
@@ -238,6 +243,7 @@ export async function updateRecipe(
       return ownerAuthErrorResult(error);
     }
 
+    console.error("updateRecipe failed", error);
     return internalError();
   }
 }
@@ -246,11 +252,25 @@ export async function softDeleteRecipe(id: string): Promise<ApiResult<RecipeActi
   try {
     await requireOwner();
 
-    const recipe = await prisma.recipe.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-      select: { id: true, updatedAt: true },
+    const recipe = await prisma.$transaction(async (tx) => {
+      const result = await tx.recipe.updateMany({
+        where: { id, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+
+      if (result.count === 0) {
+        return null;
+      }
+
+      return tx.recipe.findUnique({
+        where: { id },
+        select: { id: true, updatedAt: true },
+      });
     });
+
+    if (!recipe) {
+      return notFoundError();
+    }
 
     revalidatePath("/");
     revalidatePath("/recipes");
@@ -268,6 +288,7 @@ export async function softDeleteRecipe(id: string): Promise<ApiResult<RecipeActi
       return ownerAuthErrorResult(error);
     }
 
+    console.error("softDeleteRecipe failed", error);
     return internalError();
   }
 }
@@ -276,11 +297,25 @@ export async function restoreRecipe(id: string): Promise<ApiResult<RecipeActionD
   try {
     await requireOwner();
 
-    const recipe = await prisma.recipe.update({
-      where: { id },
-      data: { deletedAt: null },
-      select: { id: true, updatedAt: true },
+    const recipe = await prisma.$transaction(async (tx) => {
+      const result = await tx.recipe.updateMany({
+        where: { id, deletedAt: { not: null } },
+        data: { deletedAt: null },
+      });
+
+      if (result.count === 0) {
+        return null;
+      }
+
+      return tx.recipe.findUnique({
+        where: { id },
+        select: { id: true, updatedAt: true },
+      });
     });
+
+    if (!recipe) {
+      return notFoundError();
+    }
 
     revalidatePath("/");
     revalidatePath("/recipes");
@@ -298,6 +333,7 @@ export async function restoreRecipe(id: string): Promise<ApiResult<RecipeActionD
       return ownerAuthErrorResult(error);
     }
 
+    console.error("restoreRecipe failed", error);
     return internalError();
   }
 }

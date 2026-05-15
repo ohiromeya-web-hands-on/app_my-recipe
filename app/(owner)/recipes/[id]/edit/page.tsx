@@ -16,7 +16,18 @@ export async function generateMetadata({ params }: EditRecipePageProps) {
 }
 
 function dateInputValue(date: Date) {
-  return date.toISOString().slice(0, 10);
+  const parts = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return `${year}-${month}-${day}`;
 }
 
 export default async function EditRecipePage({ params }: EditRecipePageProps) {
@@ -54,7 +65,7 @@ export default async function EditRecipePage({ params }: EditRecipePageProps) {
           isFavorite: recipe.isFavorite,
           steps:
             recipe.steps.length > 0
-              ? recipe.steps.map((step) => ({ id: step.id, content: step.content }))
+              ? recipe.steps.map((step) => ({ content: step.content }))
               : [{ content: "" }],
         }}
       />

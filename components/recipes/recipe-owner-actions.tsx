@@ -48,6 +48,11 @@ export function RecipeOwnerActions({ recipeId }: RecipeOwnerActionsProps) {
   };
 
   const undoDelete = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
     startTransition(async () => {
       const result = await restoreRecipe(recipeId);
       if (!result.ok) {
@@ -55,9 +60,6 @@ export function RecipeOwnerActions({ recipeId }: RecipeOwnerActionsProps) {
         return;
       }
 
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
       setToastVisible(false);
       router.refresh();
     });

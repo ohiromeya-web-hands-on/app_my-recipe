@@ -5,6 +5,10 @@ import {
 } from "@prisma/client";
 import { z } from "zod";
 
+export const recipeCategoryOptions = Object.values(RecipeCategory);
+export const recipeGenreOptions = Object.values(RecipeGenreValue);
+export const mealTypeOptions = Object.values(MealType);
+
 const optionalUrl = z
   .string()
   .trim()
@@ -25,7 +29,6 @@ const optionalShortText = (max: number) =>
     .transform((value) => value || null);
 
 export const recipeStepSchema = z.object({
-  id: z.string().optional(),
   content: z
     .string()
     .trim()
@@ -45,8 +48,8 @@ export const recipeFormSchema = z.object({
   category: z.nativeEnum(RecipeCategory, {
     error: "カテゴリーを選択してください",
   }),
-  genres: z.array(z.nativeEnum(RecipeGenreValue)).max(8).default([]),
-  mealTypes: z.array(z.nativeEnum(MealType)).max(8).default([]),
+  genres: z.array(z.nativeEnum(RecipeGenreValue)).max(recipeGenreOptions.length).default([]),
+  mealTypes: z.array(z.nativeEnum(MealType)).max(mealTypeOptions.length).default([]),
   difficulty: z.coerce
     .number()
     .int("難易度は整数で入力してください")
@@ -81,7 +84,3 @@ export type RecipeFormInput = z.input<typeof recipeFormSchema>;
 export type RecipeFormValues = z.output<typeof recipeFormSchema>;
 export type RecipeUpdateInput = z.input<typeof recipeUpdateSchema>;
 export type RecipeUpdateValues = z.output<typeof recipeUpdateSchema>;
-
-export const recipeCategoryOptions = Object.values(RecipeCategory);
-export const recipeGenreOptions = Object.values(RecipeGenreValue);
-export const mealTypeOptions = Object.values(MealType);

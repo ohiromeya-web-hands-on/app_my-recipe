@@ -720,13 +720,28 @@ a {
   padding: 18px;
 }
 
-.conflict-dialog pre {
-  max-height: 260px;
-  overflow: auto;
+.conflict-summary {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.conflict-summary div {
+  display: grid;
+  gap: 4px;
   border-radius: 8px;
   background: var(--panel-muted);
-  color: var(--text);
   padding: 12px;
+}
+
+.conflict-summary dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.conflict-summary dd {
+  margin: 0;
 }
 
 @media (max-width: 860px) {

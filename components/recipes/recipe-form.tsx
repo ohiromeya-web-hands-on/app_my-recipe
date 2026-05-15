@@ -58,7 +58,7 @@ type RecipeFormValues = {
   memoMarkdown: string;
   savedAt: string;
   isFavorite: boolean;
-  steps: { id?: string; content: string }[];
+  steps: { content: string }[];
 };
 
 type RecipeFormProps = {
@@ -66,9 +66,49 @@ type RecipeFormProps = {
   defaultValues: RecipeFormValues;
 };
 
+type ConflictDetails = {
+  latest?: {
+    title?: string | null;
+    updatedAt?: string | null;
+  } | null;
+};
+
 function fieldError(errors: FieldErrors<RecipeFormValues>, name: keyof RecipeFormValues) {
   const error = errors[name];
   return typeof error?.message === "string" ? error.message : null;
+}
+
+function toConflictDetails(details: unknown): ConflictDetails {
+  if (!details || typeof details !== "object") {
+    return {};
+  }
+
+  const latest = "latest" in details ? details.latest : null;
+  if (!latest || typeof latest !== "object") {
+    return {};
+  }
+
+  return {
+    latest: {
+      title: "title" in latest && typeof latest.title === "string" ? latest.title : null,
+      updatedAt:
+        "updatedAt" in latest && typeof latest.updatedAt === "string"
+          ? latest.updatedAt
+          : null,
+    },
+  };
+}
+
+function formatUpdatedAt(value?: string | null) {
+  if (!value) {
+    return "更新日時不明";
+  }
+
+  return new Intl.DateTimeFormat("ja-JP", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Tokyo",
+  }).format(new Date(value));
 }
 
 function SortableStep({
@@ -125,7 +165,7 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formMessage, setFormMessage] = useState<string | null>(null);
-  const [conflictDetails, setConflictDetails] = useState<unknown>(null);
+  const [conflictDetails, setConflictDetails] = useState<ConflictDetails | null>(null);
   const isEdit = mode === "edit";
 
   const resolver = useMemo(
@@ -138,7 +178,7 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
     formState: { errors, isDirty },
     handleSubmit,
     register,
-    watch,
+    reset,
   } = useForm<RecipeFormValues>({
     resolver,
     defaultValues,
@@ -171,8 +211,6 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
   }, [isDirty]);
 
   const stepIds = fields.map((field) => field.id);
-  const selectedGenres = watch("genres") ?? [];
-  const selectedMealTypes = watch("mealTypes") ?? [];
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -197,11 +235,12 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
       if (!result.ok) {
         setFormMessage(result.error.message);
         if (result.error.code === "CONFLICT") {
-          setConflictDetails(result.error.details);
+          setConflictDetails(toConflictDetails(result.error.details));
         }
         return;
       }
 
+      reset(values);
       router.push(`/recipes/${result.data.id}`);
       router.refresh();
     });
@@ -281,7 +320,6 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
               <input
                 type="checkbox"
                 value={genre}
-                checked={selectedGenres.includes(genre)}
                 {...register("genres")}
               />
               <span>{genreLabel(genre)}</span>
@@ -294,7 +332,6 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
               <input
                 type="checkbox"
                 value={mealType}
-                checked={selectedMealTypes.includes(mealType)}
                 {...register("mealTypes")}
               />
               <span>{mealTypeLabel(mealType)}</span>
@@ -373,7 +410,18 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
         <div className="conflict-dialog" role="alertdialog" aria-labelledby="conflict-title">
           <h2 id="conflict-title">最新の内容があります</h2>
           <p>別タブなどで保存された内容があります。ページを再読み込みして最新内容を確認してください。</p>
-          <pre>{JSON.stringify(conflictDetails, null, 2)}</pre>
+          {conflictDetails.latest ? (
+            <dl className="conflict-summary">
+              <div>
+                <dt>最新のタイトル</dt>
+                <dd>{conflictDetails.latest.title || "タイトル未取得"}</dd>
+              </div>
+              <div>
+                <dt>最新の更新日時</dt>
+                <dd>{formatUpdatedAt(conflictDetails.latest.updatedAt)}</dd>
+              </div>
+            </dl>
+          ) : null}
           <button type="button" className="secondary-button" onClick={() => router.refresh()}>
             最新内容を読み込む
           </button>
