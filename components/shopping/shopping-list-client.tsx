@@ -35,6 +35,7 @@ type UndoToast = {
   id: string;
   message: string;
   items: ShoppingItemWithRecipes[];
+  ready: boolean;
 };
 
 function applyItemState(
@@ -108,14 +109,16 @@ function makeToastId() {
 
 export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProps) {
   const [items, setItems] = useState(initialItems);
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
   const [optimisticItems, addOptimistic] = useOptimistic(
     items,
     (current, action: ShoppingOptimisticAction) => {
       if (action.type === "replace") {
-        return replaceState(current, action.item, tab);
+        return replaceState(current, action.item, tabRef.current);
       }
 
-      return restoreStates(current, action.items, tab);
+      return restoreStates(current, action.items, tabRef.current);
     },
   );
   const [toasts, setToasts] = useState<UndoToast[]>([]);
@@ -151,6 +154,14 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
     timers.current.set(toast.id, timeout);
   };
 
+  const markToastReady = (toastId: string) => {
+    setToasts((current) =>
+      current.map((toast) =>
+        toast.id === toastId ? { ...toast, ready: true } : toast,
+      ),
+    );
+  };
+
   const removeToast = (toastId: string) => {
     const timeout = timers.current.get(toastId);
     if (timeout) {
@@ -168,6 +179,7 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
         ? `「${item.name}」を買うものに戻しました`
         : `「${item.name}」を購入済みにしました`,
       items: [item],
+      ready: false,
     };
 
     startTransition(async () => {
@@ -183,11 +195,16 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
         return;
       }
 
-      setItems((current) => replaceState(current, nextItem, tab));
+      markToastReady(toast.id);
+      setItems((current) => replaceState(current, nextItem, tabRef.current));
     });
   };
 
   const handleUndo = (toast: UndoToast) => {
+    if (!toast.ready) {
+      return;
+    }
+
     startTransition(async () => {
       removeToast(toast.id);
       addOptimistic({ type: "restore", items: toast.items });
@@ -200,7 +217,7 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
         return;
       }
 
-      setItems((current) => restoreStates(current, toast.items, tab));
+      setItems((current) => restoreStates(current, toast.items, tabRef.current));
     });
   };
 
@@ -248,7 +265,11 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
         {toasts.map((toast) => (
           <div className="undo-toast" key={toast.id}>
             <span>{toast.message}</span>
-            <button type="button" onClick={() => handleUndo(toast)}>
+            <button
+              type="button"
+              onClick={() => handleUndo(toast)}
+              disabled={!toast.ready}
+            >
               Undo
             </button>
           </div>
