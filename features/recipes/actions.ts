@@ -26,6 +26,13 @@ type RecipeActionData = {
 
 const RESTORE_WINDOW_MS = 5 * 60 * 1000;
 
+class IngredientConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "IngredientConflictError";
+  }
+}
+
 function validationError(details: unknown): ApiResult<never> {
   return {
     ok: false,
@@ -101,10 +108,9 @@ async function createRecipeIngredients(
       });
 
       if (existing) {
-        return {
-          status: "conflict" as const,
-          message: `「${name}」は既に買い物リストにあります。候補から選択してください。`,
-        };
+        throw new IngredientConflictError(
+          `「${name}」は既に買い物リストにあります。候補から選択してください。`,
+        );
       }
 
       const shoppingItem = await tx.shoppingItem.create({
@@ -128,7 +134,6 @@ async function createRecipeIngredients(
     });
   }
 
-  return { status: "ok" as const };
 }
 
 async function getLatestRecipeSnapshot(id: string) {
@@ -190,21 +195,14 @@ export async function createRecipe(input: RecipeFormInput): Promise<ApiResult<Re
         },
       });
 
-      const ingredientsResult = await createRecipeIngredients(
+      await createRecipeIngredients(
         tx,
         recipe.id,
         values.ingredients,
       );
-      if (ingredientsResult.status === "conflict") {
-        return ingredientsResult;
-      }
 
       return { status: "created" as const, recipe };
     });
-
-    if (result.status === "conflict") {
-      return conflictError(result.message);
-    }
 
     revalidatePath("/");
     revalidatePath("/recipes");
@@ -219,6 +217,10 @@ export async function createRecipe(input: RecipeFormInput): Promise<ApiResult<Re
   } catch (error) {
     if (isOwnerAuthError(error)) {
       return ownerAuthErrorResult(error);
+    }
+
+    if (error instanceof IngredientConflictError) {
+      return conflictError(error.message);
     }
 
     if (isUniqueConstraintError(error)) {
@@ -292,14 +294,11 @@ export async function updateRecipe(
         },
       });
 
-      const ingredientsResult = await createRecipeIngredients(
+      await createRecipeIngredients(
         tx,
         values.id,
         values.ingredients,
       );
-      if (ingredientsResult.status === "conflict") {
-        return ingredientsResult;
-      }
 
       return { status: "updated" as const, recipe };
     });
@@ -309,10 +308,6 @@ export async function updateRecipe(
     }
 
     if (result.status === "conflict") {
-      if ("message" in result) {
-        return conflictError(result.message);
-      }
-
       return {
         ok: false,
         error: {
@@ -340,6 +335,10 @@ export async function updateRecipe(
   } catch (error) {
     if (isOwnerAuthError(error)) {
       return ownerAuthErrorResult(error);
+    }
+
+    if (error instanceof IngredientConflictError) {
+      return conflictError(error.message);
     }
 
     if (isUniqueConstraintError(error)) {
