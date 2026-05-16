@@ -27,7 +27,8 @@ export type ShoppingItemWithRecipes = Prisma.ShoppingItemGetPayload<{
 }>;
 
 export function parseShoppingTab(tab: string | string[] | undefined): ShoppingTab {
-  return tab === "purchased" ? "purchased" : "active";
+  const value = Array.isArray(tab) ? tab.at(-1) : tab;
+  return value === "purchased" ? "purchased" : "active";
 }
 
 export async function listShoppingItems(tab: ShoppingTab) {

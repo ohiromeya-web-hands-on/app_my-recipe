@@ -56,6 +56,13 @@ function toState(item: ShoppingItemWithRecipes) {
   };
 }
 
+function toToggledItems(items: ShoppingItemWithRecipes[]) {
+  return items.map((item) => ({
+    ...item,
+    purchased: !item.purchased,
+  }));
+}
+
 function replaceState(
   items: ShoppingItemWithRecipes[],
   next: ShoppingItemWithRecipes,
@@ -186,6 +193,9 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
       addOptimistic({ type: "restore", items: toast.items });
       const result = await restoreShoppingItemStates(toast.items.map(toState));
       if (!result.ok) {
+        for (const item of toToggledItems(toast.items)) {
+          addOptimistic({ type: "replace", item });
+        }
         setError(result.error.message);
         return;
       }
