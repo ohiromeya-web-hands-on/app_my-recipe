@@ -1,5 +1,6 @@
 "use server";
 
+import type { ShoppingCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ApiResult } from "@/lib/result";
 import {
@@ -13,7 +14,7 @@ export type ShoppingItemCandidate = {
   id: string;
   name: string;
   normalizedName: string;
-  category: string;
+  category: ShoppingCategory;
 };
 
 export async function searchShoppingItem(

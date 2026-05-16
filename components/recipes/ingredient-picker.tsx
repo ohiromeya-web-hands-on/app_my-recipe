@@ -46,16 +46,23 @@ export function IngredientPicker({
   }, [value.name, value.shoppingItemId]);
 
   useEffect(() => {
+    let canceled = false;
     const trimmedQuery = query.trim();
     if (!trimmedQuery) {
       setCandidates([]);
       setMessage(null);
-      return;
+      return () => {
+        canceled = true;
+      };
     }
 
     const timeout = window.setTimeout(() => {
       startTransition(async () => {
         const result = await searchShoppingItem(trimmedQuery);
+        if (canceled) {
+          return;
+        }
+
         if (!result.ok) {
           setMessage(result.error.message);
           setCandidates([]);
@@ -67,7 +74,10 @@ export function IngredientPicker({
       });
     }, 180);
 
-    return () => window.clearTimeout(timeout);
+    return () => {
+      canceled = true;
+      window.clearTimeout(timeout);
+    };
   }, [query]);
 
   const update = (next: Partial<IngredientPickerValue>) => {
@@ -83,7 +93,7 @@ export function IngredientPicker({
       ...value,
       shoppingItemId: candidate.id,
       name: candidate.name,
-      category: candidate.category as ShoppingCategory,
+      category: candidate.category,
     });
   };
 

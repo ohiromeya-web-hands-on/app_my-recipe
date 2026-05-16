@@ -104,25 +104,43 @@ async function createRecipeIngredients(
       const normalizedName = normalizeShoppingItemName(name);
       const existing = await tx.shoppingItem.findUnique({
         where: { normalizedName },
-        select: { id: true },
+        select: { id: true, deletedAt: true },
       });
 
       if (existing) {
-        throw new IngredientConflictError(
-          `「${name}」は既に買い物リストにあります。候補から選択してください。`,
-        );
+        if (existing.deletedAt) {
+          const restoredShoppingItem = await tx.shoppingItem.update({
+            where: { id: existing.id },
+            data: {
+              name,
+              normalizedName,
+              status: ShoppingStatus.NEED,
+              category: ingredient.category,
+              purchased: false,
+              deletedAt: null,
+            },
+            select: { id: true },
+          });
+          shoppingItemId = restoredShoppingItem.id;
+        } else {
+          throw new IngredientConflictError(
+            `「${name}」は既に買い物リストにあります。候補から選択してください。`,
+          );
+        }
       }
 
-      const shoppingItem = await tx.shoppingItem.create({
-        data: {
-          name,
-          normalizedName,
-          status: ShoppingStatus.NEED,
-          category: ingredient.category,
-        },
-        select: { id: true },
-      });
-      shoppingItemId = shoppingItem.id;
+      if (!shoppingItemId) {
+        const shoppingItem = await tx.shoppingItem.create({
+          data: {
+            name,
+            normalizedName,
+            status: ShoppingStatus.NEED,
+            category: ingredient.category,
+          },
+          select: { id: true },
+        });
+        shoppingItemId = shoppingItem.id;
+      }
     }
 
     await tx.recipeIngredient.create({
