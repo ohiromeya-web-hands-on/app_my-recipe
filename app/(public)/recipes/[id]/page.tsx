@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { auth, getAllowedOwnerEmails, normalizeOwnerEmail } from "@/auth";
 import { RecipeOwnerActions } from "@/components/recipes/recipe-owner-actions";
+import { RestoreMissingItemsButton } from "@/components/shopping/restore-missing-items-button";
 import { getPublishedRecipeById } from "@/features/recipes/queries";
 import {
   categoryLabel,
@@ -50,6 +51,9 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
   const isOwner =
     session?.user?.email != null &&
     getAllowedOwnerEmails().has(normalizeOwnerEmail(session.user.email));
+  const hasPurchasedIngredient = recipe.ingredients.some(
+    (ingredient) => ingredient.shoppingItem.purchased,
+  );
 
   return (
     <main className="page-shell recipe-detail-shell">
@@ -98,7 +102,15 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
 
         <div className="detail-grid">
           <section className="detail-section">
-            <h2>材料</h2>
+            <div className="detail-section-heading">
+              <h2>材料</h2>
+              {isOwner ? (
+                <RestoreMissingItemsButton
+                  recipeId={recipe.id}
+                  disabled={!hasPurchasedIngredient}
+                />
+              ) : null}
+            </div>
             {recipe.ingredients.length > 0 ? (
               <ul className="ingredient-list">
                 {recipe.ingredients.map((ingredient) => (
