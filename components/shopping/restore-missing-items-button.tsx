@@ -33,6 +33,10 @@ export function RestoreMissingItemsButton({
   };
 
   const handleRestore = () => {
+    if (undoState) {
+      return;
+    }
+
     startTransition(async () => {
       clearUndoTimer();
       setMessage(null);
@@ -44,7 +48,6 @@ export function RestoreMissingItemsButton({
 
       if (result.data.count === 0) {
         setMessage("買い物リストに戻す材料はありません。");
-        setUndoState(null);
         return;
       }
 
@@ -81,7 +84,7 @@ export function RestoreMissingItemsButton({
         type="button"
         className="secondary-button"
         onClick={handleRestore}
-        disabled={disabled || isPending}
+        disabled={disabled || isPending || Boolean(undoState)}
       >
         不足材料を買い物リストに戻す
       </button>
