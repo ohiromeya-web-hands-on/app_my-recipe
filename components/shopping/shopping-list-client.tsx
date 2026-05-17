@@ -145,13 +145,21 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
       : "購入済みの項目はありません。";
   }, [tab]);
 
+  const startToastTimer = (toastId: string) => {
+    const existingTimeout = timers.current.get(toastId);
+    if (existingTimeout) {
+      window.clearTimeout(existingTimeout);
+    }
+
+    const timeout = window.setTimeout(() => {
+      timers.current.delete(toastId);
+      setToasts((current) => current.filter((item) => item.id !== toastId));
+    }, 5000);
+    timers.current.set(toastId, timeout);
+  };
+
   const addUndoToast = (toast: UndoToast) => {
     setToasts((current) => [...current, toast]);
-    const timeout = window.setTimeout(() => {
-      timers.current.delete(toast.id);
-      setToasts((current) => current.filter((item) => item.id !== toast.id));
-    }, 5000);
-    timers.current.set(toast.id, timeout);
   };
 
   const markToastReady = (toastId: string) => {
@@ -160,6 +168,7 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
         toast.id === toastId ? { ...toast, ready: true } : toast,
       ),
     );
+    startToastTimer(toastId);
   };
 
   const removeToast = (toastId: string) => {
