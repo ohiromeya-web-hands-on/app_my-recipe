@@ -62,6 +62,7 @@ export default async function Page() {
               <span className="eyebrow">Shopping</span>
               <h2>未購入リスト</h2>
             </div>
+            <Link href="/shopping?tab=active">すべて見る</Link>
           </div>
 
           {shoppingItems.length > 0 ? (
