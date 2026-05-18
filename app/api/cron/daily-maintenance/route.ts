@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
+import { runDailyMaintenance } from "@/features/maintenance/daily-maintenance";
 
 function safeTokenEquals(actual: string | null, expected: string) {
   if (!actual) {
@@ -16,7 +17,7 @@ function safeTokenEquals(actual: string | null, expected: string) {
   return timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const expected = process.env.CRON_SECRET;
 
@@ -27,12 +28,28 @@ export function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({
-    ok: true,
-    data: {
-      job: "daily-maintenance",
-      actions: ["purge-soft-deleted-recipes", "purge-orphan-shopping-items"],
-      mode: "stub"
-    }
-  });
+  try {
+    const result = await runDailyMaintenance();
+
+    return NextResponse.json({
+      ok: true,
+      data: {
+        job: "daily-maintenance",
+        actions: ["purge-soft-deleted-recipes", "purge-orphan-shopping-items"],
+        ...result,
+      },
+    });
+  } catch (error) {
+    console.error("daily-maintenance failed", error);
+    return NextResponse.json(
+      {
+        ok: false,
+        error: {
+          code: "INTERNAL",
+          message: "Daily maintenance failed",
+        },
+      },
+      { status: 500 },
+    );
+  }
 }

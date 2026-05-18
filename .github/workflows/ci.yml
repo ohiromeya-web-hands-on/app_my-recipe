@@ -42,12 +42,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Unit tests
+        run: npm test
+
       - name: Audit dependencies
-       # TODO:
-       # 現在のPRを通すため、一時的に `high` を使用しています。
-       # 本来の `moderate` よりセキュリティ基準が下がっているため、
-       # 依存関係の脆弱性対応後に `moderate` へ戻す予定です。
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=moderate
+
       - name: Build
         run: npm run build
         env:
@@ -60,3 +60,21 @@ jobs:
           CRON_SECRET: "ci-cron-secret"
           BLOB_READ_WRITE_TOKEN: "ci-blob-token"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright axe smoke
+        run: npm run test:e2e
+        env:
+          AUTH_SECRET: "ci-secret"
+          AUTH_URL: "http://localhost:3000"
+          GOOGLE_CLIENT_ID: "ci-client-id"
+          GOOGLE_CLIENT_SECRET: "ci-client-secret"
+          OWNER_GOOGLE_EMAILS: "owner@example.com,backup-owner@example.com"
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+          CRON_SECRET: "ci-cron-secret"
+          BLOB_READ_WRITE_TOKEN: "ci-blob-token"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          E2E_OWNER_EMAIL: "owner@example.com"
+          PLAYWRIGHT_TEST: "1"

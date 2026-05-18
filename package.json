@@ -7,7 +7,8 @@
     "build": "prisma migrate deploy && prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "test": "vitest run",
+    "test": "vitest run --exclude tests/e2e/**",
+    "test:e2e": "next build && playwright test",
     "test:integration": "RUN_DB_TESTS=1 vitest run tests/shopping-item-conflict.test.ts",
     "typecheck": "npx prisma generate && tsc --noEmit",
     "db:migrate": "prisma migrate dev",
@@ -35,6 +36,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22.13.0",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
