@@ -279,6 +279,20 @@ a {
   padding: 40px;
 }
 
+.page-header-with-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.button-row,
+.section-heading-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
@@ -1226,6 +1240,11 @@ a {
     align-items: start;
   }
 
+  .page-header-with-actions {
+    display: grid;
+    align-items: start;
+  }
+
   .shopping-page-header,
   .shopping-row {
     grid-template-columns: 1fr;
@@ -1284,6 +1303,19 @@ a {
   }
 
   .dashboard-hero .button {
+    width: 100%;
+  }
+
+  .button-row,
+  .section-heading-actions {
+    width: 100%;
+  }
+
+  .button-row {
+    display: grid;
+  }
+
+  .page-header-with-actions .button {
     width: 100%;
   }
 

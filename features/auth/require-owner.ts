@@ -1,5 +1,6 @@
 import type { Session } from "next-auth";
 import { auth, getAllowedOwnerEmails, normalizeOwnerEmail } from "@/auth";
+import { getE2EOwnerSessionOrNull } from "@/features/auth/owner-session";
 import type { ApiResult, ErrorCode } from "@/lib/result";
 
 type OwnerSession = Session;
@@ -18,17 +19,9 @@ export class OwnerAuthError extends Error {
 }
 
 export async function requireOwner(): Promise<OwnerSession> {
-  if (
-    process.env.VERCEL_ENV !== "production" &&
-    process.env.PLAYWRIGHT_TEST === "1" &&
-    process.env.E2E_OWNER_EMAIL
-  ) {
-    return {
-      user: {
-        email: process.env.E2E_OWNER_EMAIL,
-      },
-      expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    } as OwnerSession;
+  const e2eOwnerSession = getE2EOwnerSessionOrNull();
+  if (e2eOwnerSession) {
+    return e2eOwnerSession;
   }
 
   const session = await auth();

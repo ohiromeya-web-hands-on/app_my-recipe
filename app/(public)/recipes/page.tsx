@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { RecipeCard } from "@/components/recipe-card";
 import { RecipeSearchPanel } from "@/components/recipes/recipe-search-panel";
+import { getOptionalOwnerSession } from "@/features/auth/owner-session";
 import { listPublishedRecipes } from "@/features/recipes/queries";
 import { parseRecipeListSearchParams } from "@/features/recipes/search-params";
 import {
@@ -8,7 +10,6 @@ import {
   genreLabel,
   mealTypeLabel,
 } from "@/features/recipes/view-labels";
-import Link from "next/link";
 
 type RecipesPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -23,14 +24,25 @@ export const metadata = {
 
 export default async function RecipesPage({ searchParams }: RecipesPageProps) {
   const params = parseRecipeListSearchParams(await searchParams);
-  const recipes = await listPublishedRecipes(params);
+  const [recipes, ownerSession] = await Promise.all([
+    listPublishedRecipes(params),
+    getOptionalOwnerSession(),
+  ]);
+  const isOwner = ownerSession != null;
 
   return (
     <main className="page-shell">
-      <section className="page-header">
-        <span className="eyebrow">Recipes</span>
-        <h1>レシピ一覧</h1>
-        <p className="lead">検索・フィルター・表示切替の状態は URL で共有できます。</p>
+      <section className="page-header page-header-with-actions">
+        <div>
+          <span className="eyebrow">Recipes</span>
+          <h1>レシピ一覧</h1>
+          <p className="lead">検索・フィルター・表示切替の状態は URL で共有できます。</p>
+        </div>
+        {isOwner ? (
+          <Link className="button" href="/recipes/new">
+            新規追加
+          </Link>
+        ) : null}
       </section>
 
       <div className="recipes-layout">

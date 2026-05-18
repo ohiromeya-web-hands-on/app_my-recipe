@@ -25,6 +25,38 @@ describe("recipeFormSchema image fields", () => {
     expect(recipeFormSchema.safeParse(validRecipe).success).toBe(true);
   });
 
+  test("accepts resolver output with null optional fields on server re-parse", () => {
+    const parsed = recipeFormSchema.safeParse(validRecipe);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+
+    expect(parsed.data.imageUrl).toBeNull();
+    expect(parsed.data.imageAlt).toBeNull();
+    expect(parsed.data.referenceUrl).toBeNull();
+    expect(recipeFormSchema.safeParse(parsed.data).success).toBe(true);
+  });
+
+  test("recipeUpdateSchema accepts resolver output with null optional fields on server re-parse", () => {
+    const parsed = recipeUpdateSchema.safeParse({
+      ...validRecipe,
+      id: "rec_1",
+      updatedAt: new Date("2026-05-18T00:00:00+09:00"),
+    });
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+
+    expect(parsed.data.imageUrl).toBeNull();
+    expect(parsed.data.imageAlt).toBeNull();
+    expect(parsed.data.referenceUrl).toBeNull();
+    expect(recipeUpdateSchema.safeParse(parsed.data).success).toBe(true);
+  });
+
   test("requires image alt when image URL is set", () => {
     const result = recipeFormSchema.safeParse({
       ...validRecipe,
