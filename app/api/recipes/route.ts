@@ -1,12 +1,29 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { listRecipeCommandItems } from '@/features/recipes/queries'
 import {
   isOwnerAuthError,
   ownerAuthErrorResult,
   requireOwner,
 } from '@/features/auth/require-owner'
 
-export async function GET() {
+export async function GET(req: Request) {
+  const searchParams = new URL(req.url).searchParams
+  const query = searchParams.get('q')
+
+  if (query != null) {
+    const recipes = await listRecipeCommandItems(query)
+
+    return NextResponse.json(
+      recipes.map((recipe) => ({
+        id: recipe.id,
+        title: recipe.title,
+        emoji: recipe.emoji,
+        ingredients: recipe.ingredients.map(({ shoppingItem }) => shoppingItem.name),
+      })),
+    )
+  }
+
   const recipes = await prisma.recipe.findMany({
     where: { deletedAt: null },
     include: {
