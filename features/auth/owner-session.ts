@@ -1,7 +1,7 @@
 import type { Session } from "next-auth";
 import { auth, getAllowedOwnerEmails, normalizeOwnerEmail } from "@/auth";
 
-export async function getOptionalOwnerSession(): Promise<Session | null> {
+export function getE2EOwnerSessionOrNull(): Session | null {
   if (
     process.env.VERCEL_ENV !== "production" &&
     process.env.PLAYWRIGHT_TEST === "1" &&
@@ -13,6 +13,15 @@ export async function getOptionalOwnerSession(): Promise<Session | null> {
       },
       expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     } as Session;
+  }
+
+  return null;
+}
+
+export async function getOptionalOwnerSession(): Promise<Session | null> {
+  const e2eOwnerSession = getE2EOwnerSessionOrNull();
+  if (e2eOwnerSession) {
+    return e2eOwnerSession;
   }
 
   const session = await auth();
