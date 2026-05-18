@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
+import { GlobalCommandPalette } from "@/components/global-command-palette";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -22,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <GlobalCommandPalette />
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>
