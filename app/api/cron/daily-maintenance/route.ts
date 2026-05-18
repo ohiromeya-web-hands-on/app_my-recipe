@@ -30,12 +30,17 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await runDailyMaintenance();
+    const actions = ["purge-soft-deleted-recipes", "purge-orphan-shopping-items"];
+
+    if (!result.recipeImageGcSkipped) {
+      actions.push("purge-unreferenced-recipe-images");
+    }
 
     return NextResponse.json({
       ok: true,
       data: {
         job: "daily-maintenance",
-        actions: ["purge-soft-deleted-recipes", "purge-orphan-shopping-items"],
+        actions,
         ...result,
       },
     });
