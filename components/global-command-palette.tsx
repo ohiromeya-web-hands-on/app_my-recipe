@@ -30,7 +30,13 @@ export function GlobalCommandPalette() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setErrorMessage(null);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
