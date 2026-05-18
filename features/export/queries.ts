@@ -22,6 +22,7 @@ export async function buildExportPayload(now = new Date()) {
       },
     }),
     prisma.shoppingItem.findMany({
+      // Export all ShoppingItems, including soft-deleted and orphaned items, to avoid data loss.
       orderBy: [{ name: "asc" }, { createdAt: "desc" }],
       include: {
         recipeIngredients: {

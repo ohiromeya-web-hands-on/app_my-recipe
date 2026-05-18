@@ -9,6 +9,10 @@ let recipeId: string;
 let shoppingItemId: string;
 
 test.beforeAll(async () => {
+  if (process.env.PLAYWRIGHT_TEST !== "1") {
+    throw new Error("Refusing to run E2E DB writes without PLAYWRIGHT_TEST=1");
+  }
+
   prisma = new PrismaClient({
     adapter: new PrismaPg({
       connectionString: process.env.DATABASE_URL,

@@ -18,7 +18,11 @@ export class OwnerAuthError extends Error {
 }
 
 export async function requireOwner(): Promise<OwnerSession> {
-  if (process.env.PLAYWRIGHT_TEST === "1" && process.env.E2E_OWNER_EMAIL) {
+  if (
+    process.env.VERCEL_ENV !== "production" &&
+    process.env.PLAYWRIGHT_TEST === "1" &&
+    process.env.E2E_OWNER_EMAIL
+  ) {
     return {
       user: {
         email: process.env.E2E_OWNER_EMAIL,
