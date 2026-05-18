@@ -110,7 +110,6 @@ function makeToastId() {
 export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProps) {
   const [items, setItems] = useState(initialItems);
   const tabRef = useRef(tab);
-  tabRef.current = tab;
   const [optimisticItems, addOptimistic] = useOptimistic(
     items,
     (current, action: ShoppingOptimisticAction) => {
@@ -125,6 +124,10 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const timers = useRef(new Map<string, number>());
+
+  useEffect(() => {
+    tabRef.current = tab;
+  }, [tab]);
 
   useEffect(() => {
     setItems(initialItems);
@@ -276,6 +279,7 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
             <span>{toast.message}</span>
             <button
               type="button"
+              aria-label={`${toast.message} の取り消し`}
               onClick={() => handleUndo(toast)}
               disabled={!toast.ready}
             >

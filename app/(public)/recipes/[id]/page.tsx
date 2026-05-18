@@ -51,7 +51,7 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
   const isOwner =
     session?.user?.email != null &&
     getAllowedOwnerEmails().has(normalizeOwnerEmail(session.user.email));
-  const hasPurchasedIngredient = recipe.ingredients.some(
+  const hasPurchasedIngredient = isOwner && recipe.ingredients.some(
     (ingredient) => ingredient.shoppingItem.purchased,
   );
 
