@@ -7,10 +7,12 @@ export type DailyMaintenanceResult = {
   deletedRecipes: number;
   deletedShoppingItems: number;
   deletedRecipeImages: number;
+  recipeImageGcSkipped: boolean;
 };
 
 const RETENTION_DAYS = 30;
 const RECIPE_IMAGE_PREFIX = "recipe-images/";
+const RECIPE_IMAGE_GC_SAFETY_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 type BlobListResult = {
   blobs: ListBlobResultBlob[];
@@ -42,6 +44,9 @@ async function listRecipeImageBlobs(blobClient: RecipeImageBlobClient) {
       cursor,
     });
     blobs.push(...result.blobs);
+    if (result.hasMore && !result.cursor) {
+      throw new Error("Vercel Blob list returned hasMore without cursor");
+    }
     cursor = result.hasMore ? result.cursor : undefined;
   } while (cursor);
 
@@ -51,24 +56,33 @@ async function listRecipeImageBlobs(blobClient: RecipeImageBlobClient) {
 async function deleteUnreferencedRecipeImages(
   referencedImageUrls: Set<string>,
   blobClient: RecipeImageBlobClient,
+  now: Date,
 ) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return 0;
+    console.warn("recipe image GC skipped because BLOB_READ_WRITE_TOKEN is not configured");
+    return { deletedRecipeImages: 0, recipeImageGcSkipped: true };
   }
 
+  const safetyWindowCutoff = now.getTime() - RECIPE_IMAGE_GC_SAFETY_WINDOW_MS;
   const blobs = await listRecipeImageBlobs(blobClient);
   const unreferencedUrls = blobs
+    // Keep this prefix guard even though list() is prefix-filtered, so a bad client cannot delete outside recipe images.
     .filter((blob) => blob.pathname.startsWith(RECIPE_IMAGE_PREFIX))
+    .filter((blob) => blob.uploadedAt.getTime() < safetyWindowCutoff)
     .filter((blob) => !referencedImageUrls.has(blob.url))
     .map((blob) => blob.url);
 
   if (unreferencedUrls.length === 0) {
-    return 0;
+    return { deletedRecipeImages: 0, recipeImageGcSkipped: false };
   }
 
   await blobClient.del(unreferencedUrls);
+  console.info("deleted unreferenced recipe image blobs", {
+    count: unreferencedUrls.length,
+    sample: unreferencedUrls.slice(0, 5),
+  });
 
-  return unreferencedUrls.length;
+  return { deletedRecipeImages: unreferencedUrls.length, recipeImageGcSkipped: false };
 }
 
 export async function runDailyMaintenance(
@@ -121,15 +135,17 @@ export async function runDailyMaintenance(
   };
 
   const dbResult = "$transaction" in client ? await client.$transaction(run) : await run(client);
-  const deletedRecipeImages = await deleteUnreferencedRecipeImages(
+  const imageGcResult = await deleteUnreferencedRecipeImages(
     dbResult.referencedRecipeImageUrls,
     blobClient,
+    now,
   );
 
   return {
     cutoff: dbResult.cutoff,
     deletedRecipes: dbResult.deletedRecipes,
     deletedShoppingItems: dbResult.deletedShoppingItems,
-    deletedRecipeImages,
+    deletedRecipeImages: imageGcResult.deletedRecipeImages,
+    recipeImageGcSkipped: imageGcResult.recipeImageGcSkipped,
   };
 }
