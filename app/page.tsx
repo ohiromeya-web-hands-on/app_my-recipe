@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { RecipeCard } from "@/components/recipe-card";
+import { getOptionalOwnerSession } from "@/features/auth/owner-session";
 import {
   listLatestPublishedRecipes,
   listNeededShoppingItems,
@@ -12,10 +13,12 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const [recipes, shoppingItems] = await Promise.all([
+  const [recipes, shoppingItems, ownerSession] = await Promise.all([
     listLatestPublishedRecipes(6),
     listNeededShoppingItems(10),
+    getOptionalOwnerSession(),
   ]);
+  const isOwner = ownerSession != null;
 
   return (
     <main className="page-shell">
@@ -27,9 +30,16 @@ export default async function Page() {
             保存したレシピと買い物候補を、実データからすぐ確認できます。
           </p>
         </div>
-        <Link className="button" href="/recipes">
-          レシピを見る
-        </Link>
+        <div className="button-row">
+          <Link className="button" href="/recipes">
+            レシピを見る
+          </Link>
+          {isOwner ? (
+            <Link className="secondary-button" href="/recipes/new">
+              新規追加
+            </Link>
+          ) : null}
+        </div>
       </section>
 
       <div className="dashboard-grid">
@@ -39,7 +49,10 @@ export default async function Page() {
               <span className="eyebrow">Latest recipes</span>
               <h2>最新レシピ</h2>
             </div>
-            <Link href="/recipes">すべて見る</Link>
+            <div className="section-heading-actions">
+              <Link href="/recipes">すべて見る</Link>
+              {isOwner ? <Link href="/recipes/new">新規追加</Link> : null}
+            </div>
           </div>
 
           {recipes.length > 0 ? (

@@ -12,9 +12,10 @@ export const mealTypeOptions = Object.values(MealType);
 export const shoppingCategoryOptions = Object.values(ShoppingCategory);
 
 const optionalUrl = z
-  .string()
-  .trim()
-  .optional()
+  .preprocess(
+    (value) => (value == null ? "" : value),
+    z.string().trim().optional(),
+  )
   .transform((value) => value || null)
   .pipe(z.string().url("URL の形式で入力してください").nullable())
   .refine(
@@ -24,10 +25,10 @@ const optionalUrl = z
 
 const optionalShortText = (max: number) =>
   z
-    .string()
-    .trim()
-    .max(max, `${max}文字以内で入力してください`)
-    .optional()
+    .preprocess(
+      (value) => (value == null ? "" : value),
+      z.string().trim().max(max, `${max}文字以内で入力してください`).optional(),
+    )
     .transform((value) => value || null);
 
 export const recipeStepSchema = z.object({

@@ -25,6 +25,20 @@ describe("recipeFormSchema image fields", () => {
     expect(recipeFormSchema.safeParse(validRecipe).success).toBe(true);
   });
 
+  test("accepts resolver output with null optional fields on server re-parse", () => {
+    const parsed = recipeFormSchema.safeParse(validRecipe);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+
+    expect(parsed.data.imageUrl).toBeNull();
+    expect(parsed.data.imageAlt).toBeNull();
+    expect(parsed.data.referenceUrl).toBeNull();
+    expect(recipeFormSchema.safeParse(parsed.data).success).toBe(true);
+  });
+
   test("requires image alt when image URL is set", () => {
     const result = recipeFormSchema.safeParse({
       ...validRecipe,
