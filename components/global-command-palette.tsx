@@ -11,21 +11,12 @@ type CommandRecipe = {
   ingredients: string[];
 };
 
-function isEditableTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return Boolean(
-    target.closest("input, textarea, select, [contenteditable='true']"),
-  );
-}
-
 export function GlobalCommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [recipes, setRecipes] = useState<CommandRecipe[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -34,14 +25,7 @@ export function GlobalCommandPalette() {
         setOpen((current) => !current);
       }
 
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "n") {
-        if (isEditableTarget(event.target)) {
-          return;
-        }
-
-        event.preventDefault();
-        router.push("/recipes/new");
-      }
+      // "/" is intentionally not bound globally so browser/page search and form input stay untouched.
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -56,10 +40,13 @@ export function GlobalCommandPalette() {
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       try {
+        setErrorMessage(null);
         const response = await fetch(`/api/recipes?q=${encodeURIComponent(query)}`, {
           signal: controller.signal,
         });
         if (!response.ok) {
+          console.error("recipe command search failed", response.status);
+          setErrorMessage("検索結果を取得できませんでした。");
           return;
         }
 
@@ -68,6 +55,9 @@ export function GlobalCommandPalette() {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
+
+        console.error("recipe command search failed", error);
+        setErrorMessage("検索結果を取得できませんでした。");
       }
     }, 150);
 
@@ -92,7 +82,9 @@ export function GlobalCommandPalette() {
         autoFocus
       />
       <Command.List>
-        <Command.Empty>該当するレシピはありません</Command.Empty>
+        <Command.Empty>
+          {errorMessage ?? "該当するレシピはありません"}
+        </Command.Empty>
         <Command.Group heading="レシピ">
           {recipes.map((recipe) => (
             <Command.Item

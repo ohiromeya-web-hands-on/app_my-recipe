@@ -11,6 +11,7 @@ export async function GET(req: Request) {
   const searchParams = new URL(req.url).searchParams
   const query = searchParams.get('q')
 
+  // q is used by the command palette and returns a compact search result shape.
   if (query != null) {
     const recipes = await listRecipeCommandItems(query)
 

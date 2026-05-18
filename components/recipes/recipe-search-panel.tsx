@@ -18,7 +18,7 @@ import {
   mealTypeLabel,
 } from "@/features/recipes/view-labels";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 
 type RecipeSearchFormValues = {
@@ -80,6 +80,7 @@ function writeParams(values: RecipeSearchFormValues) {
   if (values.order !== "desc") {
     params.set("order", values.order);
   }
+  // Favorite view is represented explicitly as view=gallery&favorite=true.
   if (values.view !== "gallery" || values.favorite) {
     params.set("view", values.view);
   }
@@ -93,14 +94,13 @@ export function RecipeSearchPanel({ params }: { params: RecipeListParams }) {
   const searchParams = useSearchParams();
   const searchParamsKey = searchParams.toString();
   const updateTimerRef = useRef<number | null>(null);
-  const defaultValues = useMemo(() => toFormValues(params), [params]);
   const { register, reset, setValue, watch } = useForm<RecipeSearchFormValues>({
-    defaultValues,
+    defaultValues: toFormValues(params),
   });
 
   useEffect(() => {
-    reset(toFormValues(parseRecipeListSearchParams(searchParams)));
-  }, [reset, searchParams, searchParamsKey]);
+    reset(toFormValues(parseRecipeListSearchParams(new URLSearchParams(searchParamsKey))));
+  }, [reset, searchParamsKey]);
 
   useEffect(() => {
     const subscription = watch((values) => {

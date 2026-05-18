@@ -63,13 +63,15 @@ function recipeSearchWhere(params?: RecipeListParams): Prisma.RecipeWhereInput {
     });
   }
 
-  if (params?.difficultyMin != null || params?.difficultyMax != null) {
-    and.push({
-      difficulty: {
-        gte: params.difficultyMin,
-        lte: params.difficultyMax,
-      },
-    });
+  const difficulty: Prisma.IntFilter = {};
+  if (params?.difficultyMin != null) {
+    difficulty.gte = params.difficultyMin;
+  }
+  if (params?.difficultyMax != null) {
+    difficulty.lte = params.difficultyMax;
+  }
+  if (Object.keys(difficulty).length > 0) {
+    and.push({ difficulty });
   }
 
   if (params?.favorite) {
