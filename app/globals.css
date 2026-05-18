@@ -745,6 +745,51 @@ a {
   grid-column: 1 / -1;
 }
 
+.image-upload-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.image-upload-preview,
+.image-upload-empty {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.image-upload-preview img {
+  object-fit: cover;
+}
+
+.image-upload-empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.image-upload-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.image-upload-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.image-upload-button input {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
 .check-field {
   grid-template-columns: auto 1fr;
   align-items: center;
