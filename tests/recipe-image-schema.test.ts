@@ -1,6 +1,6 @@
 import { MealType, RecipeCategory } from "@prisma/client";
 import { describe, expect, test } from "vitest";
-import { recipeFormSchema } from "../features/recipes/schema";
+import { recipeFormSchema, recipeUpdateSchema } from "../features/recipes/schema";
 
 const validRecipe = {
   title: "鶏むねの照り焼き",
@@ -28,6 +28,27 @@ describe("recipeFormSchema image fields", () => {
   test("requires image alt when image URL is set", () => {
     const result = recipeFormSchema.safeParse({
       ...validRecipe,
+      imageUrl: "https://example.com/recipe.webp",
+      imageAlt: "",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: ["imageAlt"],
+          }),
+        ]),
+      );
+    }
+  });
+
+  test("recipeUpdateSchema also requires image alt when image URL is set", () => {
+    const result = recipeUpdateSchema.safeParse({
+      ...validRecipe,
+      id: "rec_1",
+      updatedAt: new Date("2026-05-18T00:00:00+09:00"),
       imageUrl: "https://example.com/recipe.webp",
       imageAlt: "",
     });
