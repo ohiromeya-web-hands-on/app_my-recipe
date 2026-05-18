@@ -35,7 +35,11 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         job: "daily-maintenance",
-        actions: ["purge-soft-deleted-recipes", "purge-orphan-shopping-items"],
+        actions: [
+          "purge-soft-deleted-recipes",
+          "purge-orphan-shopping-items",
+          "purge-unreferenced-recipe-images",
+        ],
         ...result,
       },
     });
