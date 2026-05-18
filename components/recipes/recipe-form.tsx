@@ -19,8 +19,10 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ShoppingCategory } from "@prisma/client";
+import { upload } from "@vercel/blob/client";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type ChangeEvent } from "react";
 import {
   useFieldArray,
   useForm,
@@ -79,6 +81,15 @@ type ConflictDetails = {
     title?: string | null;
     updatedAt?: string | null;
   } | null;
+};
+
+const MAX_RECIPE_IMAGE_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_RECIPE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_RECIPE_IMAGE_EXTENSIONS = ".jpg,.jpeg,.png,.webp";
+const IMAGE_EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
 };
 
 const stepAnnouncements: Announcements = {
@@ -142,6 +153,19 @@ function formatUpdatedAt(value?: string | null) {
   }).format(new Date(value));
 }
 
+function buildRecipeImagePathname(file: File) {
+  const extension = IMAGE_EXTENSION_BY_TYPE[file.type] ?? "jpg";
+  const basename =
+    file.name
+      .replace(/\.[^.]+$/, "")
+      .normalize("NFKC")
+      .replace(/[^a-zA-Z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 48) || "recipe";
+
+  return `recipe-images/${Date.now()}-${basename}.${extension}`;
+}
+
 function SortableStep({
   fieldId,
   index,
@@ -196,6 +220,8 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [imageUploadMessage, setImageUploadMessage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [conflictDetails, setConflictDetails] = useState<ConflictDetails | null>(null);
   const isEdit = mode === "edit";
 
@@ -240,6 +266,8 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
       control,
       name: "ingredients",
     }) ?? [];
+  const imageUrl = useWatch({ control, name: "imageUrl" }) ?? "";
+  const imageAlt = useWatch({ control, name: "imageAlt" }) ?? "";
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -275,7 +303,67 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
     move(oldIndex, newIndex);
   };
 
+  const onImageFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+
+    setImageUploadMessage(null);
+
+    if (!ACCEPTED_RECIPE_IMAGE_TYPES.includes(file.type)) {
+      setImageUploadMessage("JPG / PNG / WebP の画像を選択してください。");
+      return;
+    }
+
+    if (file.size > MAX_RECIPE_IMAGE_BYTES) {
+      setImageUploadMessage("5MB 以下の画像を選択してください。");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const blob = await upload(buildRecipeImagePathname(file), file, {
+        access: "public",
+        contentType: file.type,
+        handleUploadUrl: "/api/upload/recipe-image",
+      });
+
+      setValue("imageUrl", blob.url, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+      setImageUploadMessage("画像をアップロードしました。写真の説明を入力してください。");
+    } catch (error) {
+      console.error("recipe image upload failed", error);
+      setImageUploadMessage("画像アップロードに失敗しました。時間をおいて再度お試しください。");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const clearImage = () => {
+    setValue("imageUrl", "", {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+    setValue("imageAlt", "", {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+    setImageUploadMessage(null);
+  };
+
   const onSubmit: SubmitHandler<RecipeFormValues> = (values) => {
+    if (isUploadingImage) {
+      setFormMessage("画像アップロードが完了してから保存してください。");
+      return;
+    }
+
     setFormMessage(null);
     setConflictDetails(null);
 
@@ -395,16 +483,56 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
       <section className="form-section">
         <h2>写真・参考URL</h2>
         <div className="form-grid">
-          <label className="field span-2">
-            <span>料理写真 URL</span>
-            <input type="url" {...register("imageUrl")} />
+          <div className="field span-2">
+            <span>料理写真</span>
+            <input type="hidden" {...register("imageUrl")} />
+            <div className="image-upload-panel">
+              {imageUrl ? (
+                <div className="image-upload-preview">
+                  <Image
+                    src={imageUrl}
+                    alt={imageAlt || "アップロードした料理写真"}
+                    fill
+                    sizes="(max-width: 720px) 100vw, 520px"
+                  />
+                </div>
+              ) : (
+                <div className="image-upload-empty">未アップロード</div>
+              )}
+              <div className="image-upload-controls">
+                <label className="secondary-button image-upload-button">
+                  {isUploadingImage ? "アップロード中..." : "画像を選択"}
+                  <input
+                    type="file"
+                    accept={ACCEPTED_RECIPE_IMAGE_EXTENSIONS}
+                    disabled={isUploadingImage || isPending}
+                    onChange={onImageFileChange}
+                  />
+                </label>
+                {imageUrl ? (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={isUploadingImage || isPending}
+                    onClick={clearImage}
+                  >
+                    画像を削除
+                  </button>
+                ) : null}
+              </div>
+              <p className="muted-text">JPG / PNG / WebP、5MBまで</p>
+              {imageUploadMessage ? <p className="muted-text">{imageUploadMessage}</p> : null}
+            </div>
             {fieldError(errors, "imageUrl") ? (
               <p className="field-error">{fieldError(errors, "imageUrl")}</p>
             ) : null}
-          </label>
+          </div>
           <label className="field span-2">
             <span>写真の説明</span>
             <input {...register("imageAlt")} maxLength={80} />
+            {fieldError(errors, "imageAlt") ? (
+              <p className="field-error">{fieldError(errors, "imageAlt")}</p>
+            ) : null}
           </label>
           <label className="field span-2">
             <span>参考 URL</span>
@@ -534,8 +662,8 @@ export function RecipeForm({ mode, defaultValues }: RecipeFormProps) {
       ) : null}
 
       <div className="form-actions">
-        <button type="submit" className="button" disabled={isPending}>
-          {isPending ? "保存中..." : "保存する"}
+        <button type="submit" className="button" disabled={isPending || isUploadingImage}>
+          {isUploadingImage ? "画像アップロード中..." : isPending ? "保存中..." : "保存する"}
         </button>
       </div>
     </form>

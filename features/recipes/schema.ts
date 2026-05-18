@@ -50,7 +50,20 @@ export const recipeIngredientSchema = z
     "材料名を入力するか、候補から材料を選択してください",
   );
 
-export const recipeFormSchema = z.object({
+function requireImageAlt(
+  value: { imageUrl: string | null; imageAlt: string | null },
+  ctx: z.RefinementCtx,
+) {
+  if (value.imageUrl && !value.imageAlt) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["imageAlt"],
+      message: "料理写真を登録する場合は写真の説明を入力してください",
+    });
+  }
+}
+
+const recipeFormBaseSchema = z.object({
   title: z
     .string()
     .trim()
@@ -91,12 +104,16 @@ export const recipeFormSchema = z.object({
     .default([]),
 });
 
-export const recipeUpdateSchema = recipeFormSchema.extend({
-  id: z.string().min(1),
-  updatedAt: z.coerce.date({
-    error: "更新日時が不正です",
-  }),
-});
+export const recipeFormSchema = recipeFormBaseSchema.superRefine(requireImageAlt);
+
+export const recipeUpdateSchema = recipeFormBaseSchema
+  .extend({
+    id: z.string().min(1),
+    updatedAt: z.coerce.date({
+      error: "更新日時が不正です",
+    }),
+  })
+  .superRefine(requireImageAlt);
 
 export type RecipeFormInput = z.input<typeof recipeFormSchema>;
 export type RecipeFormValues = z.output<typeof recipeFormSchema>;
