@@ -240,7 +240,7 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
       {optimisticItems.length > 0 ? (
         <div className="shopping-table" role="list">
           {optimisticItems.map((item) => (
-            <article className="shopping-row" key={item.id} role="listitem">
+            <div className="shopping-row" key={item.id} role="listitem">
               <label className="shopping-check">
                 <input
                   type="checkbox"
@@ -264,7 +264,7 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
                   <span>単独項目</span>
                 )}
               </div>
-            </article>
+            </div>
           ))}
         </div>
       ) : (

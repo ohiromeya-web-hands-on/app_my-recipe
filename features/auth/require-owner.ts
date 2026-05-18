@@ -18,6 +18,15 @@ export class OwnerAuthError extends Error {
 }
 
 export async function requireOwner(): Promise<OwnerSession> {
+  if (process.env.PLAYWRIGHT_TEST === "1" && process.env.E2E_OWNER_EMAIL) {
+    return {
+      user: {
+        email: process.env.E2E_OWNER_EMAIL,
+      },
+      expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    } as OwnerSession;
+  }
+
   const session = await auth();
 
   if (!session?.user?.email) {

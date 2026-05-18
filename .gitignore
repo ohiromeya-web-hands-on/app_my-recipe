@@ -8,5 +8,7 @@ dev.db
 *.tsbuildinfo
 vercel
 .vercel
+playwright-report
+test-results
 
 /generated/prisma

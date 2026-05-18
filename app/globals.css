@@ -376,6 +376,12 @@ a {
   color: var(--text);
 }
 
+.recipe-results-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
 .recipe-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);

@@ -38,6 +38,7 @@ export default async function RecipesPage({ searchParams }: RecipesPageProps) {
 
         <section className="recipe-results" aria-live="polite">
           <div className="recipe-results-heading">
+            <h2>検索結果</h2>
             <strong>{recipes.length}件</strong>
             <span>
               {params.view === "table" ? "テーブル表示" : "ギャラリー表示"}
