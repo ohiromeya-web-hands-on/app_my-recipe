@@ -43,7 +43,7 @@ export default async function RecipesPage({ searchParams }: RecipesPageProps) {
             新規追加
           </Link>
         ) : (
-          <Link className="button" href="/api/auth/signin">
+          <Link className="button" href="/api/auth/signin?callbackUrl=%2Frecipes">
             ログイン
           </Link>
         )}

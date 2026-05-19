@@ -39,7 +39,7 @@ export default async function Page() {
               新規追加
             </Link>
           ) : (
-            <Link className="secondary-button" href="/api/auth/signin">
+            <Link className="secondary-button" href="/api/auth/signin?callbackUrl=%2F">
               ログイン
             </Link>
           )}
