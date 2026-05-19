@@ -6,7 +6,10 @@ import {
   searchShoppingItem,
   type ShoppingItemCandidate,
 } from "@/features/shopping/actions";
-import { shoppingCategoryLabel } from "@/features/recipes/view-labels";
+import {
+  shoppingCategoryLabel,
+  shoppingCategoryOptions,
+} from "@/features/recipes/view-labels";
 import { normalizeShoppingItemName } from "@/lib/normalize";
 
 export type IngredientPickerValue = {
@@ -22,8 +25,6 @@ type IngredientPickerProps = {
   onChange: (value: IngredientPickerValue) => void;
   onRemove: () => void;
 };
-
-const shoppingCategoryOptions = Object.values(ShoppingCategory);
 
 export function IngredientPicker({
   index,

@@ -1,9 +1,9 @@
-import type {
-  MealType,
-  RecipeCategory,
-  RecipeGenreValue,
+import {
   ShoppingCategory,
-  ShoppingStatus,
+  type MealType,
+  type RecipeCategory,
+  type RecipeGenreValue,
+  type ShoppingStatus,
 } from "@prisma/client";
 
 export function categoryLabel(category: RecipeCategory) {
@@ -52,12 +52,21 @@ export function shoppingStatusLabel(status: ShoppingStatus) {
   return labels[status];
 }
 
+export const shoppingCategoryOptions = [
+  ShoppingCategory.VEGETABLE,
+  ShoppingCategory.DAIRY,
+  ShoppingCategory.MEAT,
+  ShoppingCategory.FISH,
+  ShoppingCategory.SEASONING,
+  ShoppingCategory.OTHER,
+] as const satisfies readonly ShoppingCategory[];
+
 export function shoppingCategoryLabel(category: ShoppingCategory) {
   const labels: Record<ShoppingCategory, string> = {
     VEGETABLE: "野菜",
+    DAIRY: "乳製品",
     MEAT: "肉",
     FISH: "魚",
-    DAIRY: "乳製品",
     SEASONING: "調味料",
     OTHER: "その他",
   };

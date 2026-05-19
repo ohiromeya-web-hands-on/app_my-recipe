@@ -9,7 +9,6 @@ import { z } from "zod";
 export const recipeCategoryOptions = Object.values(RecipeCategory);
 export const recipeGenreOptions = Object.values(RecipeGenreValue);
 export const mealTypeOptions = Object.values(MealType);
-export const shoppingCategoryOptions = Object.values(ShoppingCategory);
 
 const optionalUrl = z
   .preprocess(

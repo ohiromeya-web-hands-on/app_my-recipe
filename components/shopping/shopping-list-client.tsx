@@ -23,6 +23,7 @@ import type {
 } from "@/features/shopping/queries";
 import {
   shoppingCategoryLabel,
+  shoppingCategoryOptions,
   shoppingStatusLabel,
 } from "@/features/recipes/view-labels";
 
@@ -111,7 +112,6 @@ function makeToastId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-const shoppingCategoryOptions = Object.values(ShoppingCategory);
 const shoppingStatusOptions = Object.values(ShoppingStatus);
 
 export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProps) {
