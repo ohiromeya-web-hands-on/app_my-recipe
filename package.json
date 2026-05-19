@@ -9,6 +9,8 @@
     "start": "next start",
     "test": "vitest run --exclude 'tests/e2e/**'",
     "test:e2e": "next build && playwright test",
+    "test:e2e:guard:unauth": "next build && E2E_AUTH_GUARD_SCENARIO=unauthenticated E2E_OWNER_EMAIL= E2E_AUTH_EMAIL= playwright test tests/e2e/owner-guard.spec.ts --config=playwright.config.ts",
+    "test:e2e:guard:non-owner": "next build && E2E_AUTH_GUARD_SCENARIO=non-owner E2E_OWNER_EMAIL= E2E_AUTH_EMAIL=guest@example.com playwright test tests/e2e/owner-guard.spec.ts --config=playwright.config.ts",
     "test:integration": "RUN_DB_TESTS=1 vitest run tests/shopping-item-conflict.test.ts",
     "typecheck": "npx prisma generate && tsc --noEmit",
     "db:migrate": "prisma migrate dev",

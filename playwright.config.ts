@@ -18,7 +18,8 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     env: {
-      E2E_OWNER_EMAIL: "owner@example.com",
+      E2E_AUTH_EMAIL: process.env.E2E_AUTH_EMAIL ?? "",
+      E2E_OWNER_EMAIL: process.env.E2E_OWNER_EMAIL ?? "owner@example.com",
       PLAYWRIGHT_TEST: "1",
     },
   },
