@@ -1,7 +1,10 @@
 "use client";
 
+import { ShoppingCategory, ShoppingStatus } from "@prisma/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  type FormEvent,
   useEffect,
   useMemo,
   useOptimistic,
@@ -10,6 +13,7 @@ import {
   useTransition,
 } from "react";
 import {
+  createShoppingItem,
   restoreShoppingItemStates,
   togglePurchased,
 } from "@/features/shopping/actions";
@@ -107,7 +111,11 @@ function makeToastId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+const shoppingCategoryOptions = Object.values(ShoppingCategory);
+const shoppingStatusOptions = Object.values(ShoppingStatus);
+
 export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProps) {
+  const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const tabRef = useRef(tab);
   const [optimisticItems, addOptimistic] = useOptimistic(
@@ -122,6 +130,11 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
   );
   const [toasts, setToasts] = useState<UndoToast[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
+  const [itemName, setItemName] = useState("");
+  const [itemCategory, setItemCategory] = useState<ShoppingCategory>(ShoppingCategory.OTHER);
+  const [itemStatus, setItemStatus] = useState<ShoppingStatus>(ShoppingStatus.NEED);
+  const [isCreatePending, startCreateTransition] = useTransition();
   const [, startTransition] = useTransition();
   const timers = useRef(new Map<string, number>());
 
@@ -144,9 +157,43 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
 
   const emptyMessage = useMemo(() => {
     return tab === "active"
-      ? "買うものはありません。レシピの材料から買い物項目を追加できます。"
+      ? "買うものはありません。上のフォームから買い物項目を追加できます。"
       : "購入済みの項目はありません。";
   }, [tab]);
+
+  const handleCreate = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = itemName.trim();
+
+    startCreateTransition(async () => {
+      setError(null);
+      setCreateMessage(null);
+
+      const result = await createShoppingItem({
+        name,
+        category: itemCategory,
+        status: itemStatus,
+      });
+
+      if (!result.ok) {
+        setError(result.error.message);
+        return;
+      }
+
+      const nextItem: ShoppingItemWithRecipes = {
+        ...result.data,
+        recipeIngredients: [],
+      };
+
+      setItemName("");
+      setItemCategory(ShoppingCategory.OTHER);
+      setItemStatus(ShoppingStatus.NEED);
+      setCreateMessage(`「${result.data.name}」を買うものに追加しました`);
+      setItems((current) => replaceState(current, nextItem, tabRef.current));
+      addOptimistic({ type: "replace", item: nextItem });
+      router.refresh();
+    });
+  };
 
   const startToastTimer = (toastId: string) => {
     const existingTimeout = timers.current.get(toastId);
@@ -235,6 +282,52 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
 
   return (
     <>
+      <form className="shopping-add-form" onSubmit={handleCreate}>
+        <div>
+          <span className="eyebrow">Add item</span>
+          <h2>買い物項目を追加</h2>
+        </div>
+        <label className="field">
+          <span>品名</span>
+          <input
+            value={itemName}
+            onChange={(event) => setItemName(event.target.value)}
+            maxLength={40}
+            required
+          />
+        </label>
+        <label className="field">
+          <span>カテゴリー</span>
+          <select
+            value={itemCategory}
+            onChange={(event) => setItemCategory(event.target.value as ShoppingCategory)}
+          >
+            {shoppingCategoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {shoppingCategoryLabel(category)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>ステータス</span>
+          <select
+            value={itemStatus}
+            onChange={(event) => setItemStatus(event.target.value as ShoppingStatus)}
+          >
+            {shoppingStatusOptions.map((status) => (
+              <option key={status} value={status}>
+                {shoppingStatusLabel(status)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="button" type="submit" disabled={isCreatePending}>
+          {isCreatePending ? "追加中..." : "追加する"}
+        </button>
+      </form>
+
+      {createMessage ? <p className="form-message">{createMessage}</p> : null}
       {error ? <p className="form-error">{error}</p> : null}
 
       {optimisticItems.length > 0 ? (

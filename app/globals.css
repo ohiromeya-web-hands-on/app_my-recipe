@@ -602,6 +602,22 @@ a {
   opacity: 0.75;
 }
 
+.shopping-add-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(160px, 0.8fr) minmax(160px, 0.8fr) auto;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 16px;
+}
+
+.shopping-add-form h2 {
+  font-size: 1.1rem;
+}
+
 .shopping-table {
   display: grid;
   gap: 10px;
@@ -1246,11 +1262,13 @@ a {
   }
 
   .shopping-page-header,
+  .shopping-add-form,
   .shopping-row {
     grid-template-columns: 1fr;
   }
 
-  .shopping-page-header {
+  .shopping-page-header,
+  .shopping-add-form {
     display: grid;
     align-items: start;
   }
