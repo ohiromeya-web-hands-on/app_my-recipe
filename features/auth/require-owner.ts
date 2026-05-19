@@ -1,6 +1,9 @@
 import type { Session } from "next-auth";
 import { auth, getAllowedOwnerEmails, normalizeOwnerEmail } from "@/auth";
-import { getE2EOwnerSessionOrNull } from "@/features/auth/owner-session";
+import {
+  getE2EOwnerSessionOrNull,
+  getE2ESessionOrNull,
+} from "@/features/auth/owner-session";
 import type { ApiResult, ErrorCode } from "@/lib/result";
 
 type OwnerSession = Session;
@@ -24,7 +27,7 @@ export async function requireOwner(): Promise<OwnerSession> {
     return e2eOwnerSession;
   }
 
-  const session = await auth();
+  const session = getE2ESessionOrNull() ?? await auth();
 
   if (!session?.user?.email) {
     throw new OwnerAuthError("UNAUTHORIZED", "Sign in required");
