@@ -42,7 +42,11 @@ export default async function RecipesPage({ searchParams }: RecipesPageProps) {
           <Link className="button" href="/recipes/new">
             新規追加
           </Link>
-        ) : null}
+        ) : (
+          <Link className="button" href="/api/auth/signin">
+            ログイン
+          </Link>
+        )}
       </section>
 
       <div className="recipes-layout">

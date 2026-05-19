@@ -38,7 +38,11 @@ export default async function Page() {
             <Link className="secondary-button" href="/recipes/new">
               新規追加
             </Link>
-          ) : null}
+          ) : (
+            <Link className="secondary-button" href="/api/auth/signin">
+              ログイン
+            </Link>
+          )}
         </div>
       </section>
 
