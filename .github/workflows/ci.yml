@@ -78,3 +78,31 @@ jobs:
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           E2E_OWNER_EMAIL: "owner@example.com"
           PLAYWRIGHT_TEST: "1"
+
+      - name: Playwright unauthenticated owner guard
+        run: npm run test:e2e:guard:unauth
+        env:
+          AUTH_SECRET: "ci-secret"
+          AUTH_URL: "http://localhost:3000"
+          GOOGLE_CLIENT_ID: "ci-client-id"
+          GOOGLE_CLIENT_SECRET: "ci-client-secret"
+          OWNER_GOOGLE_EMAILS: "owner@example.com,backup-owner@example.com"
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+          CRON_SECRET: "ci-cron-secret"
+          BLOB_READ_WRITE_TOKEN: "ci-blob-token"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          PLAYWRIGHT_TEST: "1"
+
+      - name: Playwright non-owner guard
+        run: npm run test:e2e:guard:non-owner
+        env:
+          AUTH_SECRET: "ci-secret"
+          AUTH_URL: "http://localhost:3000"
+          GOOGLE_CLIENT_ID: "ci-client-id"
+          GOOGLE_CLIENT_SECRET: "ci-client-secret"
+          OWNER_GOOGLE_EMAILS: "owner@example.com,backup-owner@example.com"
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+          CRON_SECRET: "ci-cron-secret"
+          BLOB_READ_WRITE_TOKEN: "ci-blob-token"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          PLAYWRIGHT_TEST: "1"

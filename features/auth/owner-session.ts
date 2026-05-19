@@ -22,7 +22,7 @@ export function getE2EOwnerSessionOrNull(): Session | null {
   return null;
 }
 
-export function getE2ESessionOrNull(): Session | null {
+export function getE2EAuthSessionOrNull(): Session | null {
   if (
     process.env.VERCEL_ENV !== "production" &&
     process.env.PLAYWRIGHT_TEST === "1" &&
@@ -40,7 +40,7 @@ export async function getOptionalOwnerSession(): Promise<Session | null> {
     return e2eOwnerSession;
   }
 
-  const session = getE2ESessionOrNull() ?? await auth();
+  const session = getE2EAuthSessionOrNull() ?? await auth();
 
   if (!session?.user?.email) {
     return null;
