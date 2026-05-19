@@ -22,4 +22,10 @@ describe("shoppingCategoryOptions", () => {
       shoppingCategoryOptions.map((category) => shoppingCategoryLabel(category)),
     ).toEqual(["野菜", "乳製品", "肉", "魚", "調味料", "その他"]);
   });
+
+  it("includes every shopping category exactly once", () => {
+    expect([...shoppingCategoryOptions].sort()).toEqual(
+      Object.values(ShoppingCategory).sort(),
+    );
+  });
 });

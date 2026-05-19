@@ -64,9 +64,9 @@ export const shoppingCategoryOptions = [
 export function shoppingCategoryLabel(category: ShoppingCategory) {
   const labels: Record<ShoppingCategory, string> = {
     VEGETABLE: "野菜",
+    DAIRY: "乳製品",
     MEAT: "肉",
     FISH: "魚",
-    DAIRY: "乳製品",
     SEASONING: "調味料",
     OTHER: "その他",
   };
