@@ -5,11 +5,12 @@ import {
   ShoppingCategory,
 } from "@prisma/client";
 import { z } from "zod";
+import { shoppingCategoryOptions } from "./view-labels";
 
 export const recipeCategoryOptions = Object.values(RecipeCategory);
 export const recipeGenreOptions = Object.values(RecipeGenreValue);
 export const mealTypeOptions = Object.values(MealType);
-export const shoppingCategoryOptions = Object.values(ShoppingCategory);
+export { shoppingCategoryOptions };
 
 const optionalUrl = z
   .preprocess(
