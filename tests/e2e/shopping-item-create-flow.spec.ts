@@ -52,6 +52,13 @@ test("owner can add a shopping item from the shopping page", async ({ page }) =>
   await expect(page.getByRole("listitem").filter({ hasText: itemName })).toBeVisible();
 });
 
+test("shopping item form is only shown on the active tab", async ({ page }) => {
+  await page.goto("/shopping?tab=purchased");
+
+  await expect(page.getByRole("heading", { name: "買い物項目を追加" })).toHaveCount(0);
+  await expect(page.getByLabel("品名")).toHaveCount(0);
+});
+
 test("duplicate normalized shopping item names are rejected", async ({ page }) => {
   const itemName = `E2E Salt ${runId}`;
   createdShoppingItemNames.push(itemName);
@@ -71,8 +78,34 @@ test("duplicate normalized shopping item names are rejected", async ({ page }) =
   await page.getByLabel("ステータス").selectOption(ShoppingStatus.NEED);
   await page.getByRole("button", { name: "追加する" }).click();
 
-  await expect(page.getByText(`「${itemName.toUpperCase()}」は既に買い物リストにあります`)).toBeVisible();
+  await expect(page.getByText(`「${itemName}」は既に買い物リストにあります`)).toBeVisible();
   await expect(
     page.getByRole("listitem").filter({ hasText: itemName }),
   ).toHaveCount(1);
+});
+
+test("soft-deleted shopping items are restored with a clear message", async ({ page }) => {
+  const itemName = `E2E パスタ ${runId}`;
+  createdShoppingItemNames.push(itemName);
+
+  await prisma.shoppingItem.create({
+    data: {
+      name: itemName,
+      normalizedName: normalizeShoppingItemName(itemName),
+      category: ShoppingCategory.OTHER,
+      status: ShoppingStatus.OPTIONAL,
+      deletedAt: new Date(),
+    },
+  });
+
+  await page.goto("/shopping");
+  await page.getByLabel("品名").fill(itemName);
+  await page.getByLabel("カテゴリー").selectOption(ShoppingCategory.SEASONING);
+  await page.getByLabel("ステータス").selectOption(ShoppingStatus.NEED);
+  await page.getByRole("button", { name: "追加する" }).click();
+
+  await expect(
+    page.getByText(`削除済みだった「${itemName}」を買うものに戻しました`),
+  ).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: itemName })).toBeVisible();
 });

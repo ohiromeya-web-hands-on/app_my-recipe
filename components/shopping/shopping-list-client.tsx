@@ -160,6 +160,7 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
       ? "買うものはありません。上のフォームから買い物項目を追加できます。"
       : "購入済みの項目はありません。";
   }, [tab]);
+  const canCreateItem = tab === "active";
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -184,13 +185,16 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
         ...result.data,
         recipeIngredients: [],
       };
+      const message =
+        result.data.action === "restored"
+          ? `削除済みだった「${result.data.name}」を買うものに戻しました`
+          : `「${result.data.name}」を買うものに追加しました`;
 
       setItemName("");
       setItemCategory(ShoppingCategory.OTHER);
       setItemStatus(ShoppingStatus.NEED);
-      setCreateMessage(`「${result.data.name}」を買うものに追加しました`);
+      setCreateMessage(message);
       setItems((current) => replaceState(current, nextItem, tabRef.current));
-      addOptimistic({ type: "replace", item: nextItem });
       router.refresh();
     });
   };
@@ -282,50 +286,52 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
 
   return (
     <>
-      <form className="shopping-add-form" onSubmit={handleCreate}>
-        <div>
-          <span className="eyebrow">Add item</span>
-          <h2>買い物項目を追加</h2>
-        </div>
-        <label className="field">
-          <span>品名</span>
-          <input
-            value={itemName}
-            onChange={(event) => setItemName(event.target.value)}
-            maxLength={40}
-            required
-          />
-        </label>
-        <label className="field">
-          <span>カテゴリー</span>
-          <select
-            value={itemCategory}
-            onChange={(event) => setItemCategory(event.target.value as ShoppingCategory)}
-          >
-            {shoppingCategoryOptions.map((category) => (
-              <option key={category} value={category}>
-                {shoppingCategoryLabel(category)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>ステータス</span>
-          <select
-            value={itemStatus}
-            onChange={(event) => setItemStatus(event.target.value as ShoppingStatus)}
-          >
-            {shoppingStatusOptions.map((status) => (
-              <option key={status} value={status}>
-                {shoppingStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="button" type="submit" disabled={isCreatePending}>
-          {isCreatePending ? "追加中..." : "追加する"}
-        </button>
-      </form>
+      {canCreateItem ? (
+        <form className="shopping-add-form" onSubmit={handleCreate}>
+          <div>
+            <span className="eyebrow">Add item</span>
+            <h2>買い物項目を追加</h2>
+          </div>
+          <label className="field">
+            <span>品名</span>
+            <input
+              value={itemName}
+              onChange={(event) => setItemName(event.target.value)}
+              maxLength={40}
+              required
+            />
+          </label>
+          <label className="field">
+            <span>カテゴリー</span>
+            <select
+              value={itemCategory}
+              onChange={(event) => setItemCategory(event.target.value as ShoppingCategory)}
+            >
+              {shoppingCategoryOptions.map((category) => (
+                <option key={category} value={category}>
+                  {shoppingCategoryLabel(category)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>ステータス</span>
+            <select
+              value={itemStatus}
+              onChange={(event) => setItemStatus(event.target.value as ShoppingStatus)}
+            >
+              {shoppingStatusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {shoppingStatusLabel(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="button" type="submit" disabled={isCreatePending}>
+            {isCreatePending ? "追加中..." : "追加する"}
+          </button>
+        </form>
+      ) : null}
 
       {createMessage ? <p className="form-message">{createMessage}</p> : null}
       {error ? <p className="form-error">{error}</p> : null}

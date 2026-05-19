@@ -40,6 +40,7 @@ export type CreatedShoppingItemData = ShoppingItemActionData & {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  action: "created" | "restored";
 };
 
 function notFoundError(message = "買い物項目が見つかりません"): ApiResult<never> {
@@ -57,6 +58,16 @@ function validationError(message: string): ApiResult<never> {
     ok: false,
     error: {
       code: "VALIDATION_ERROR",
+      message,
+    },
+  };
+}
+
+function conflictError(message: string): ApiResult<never> {
+  return {
+    ok: false,
+    error: {
+      code: "CONFLICT",
       message,
     },
   };
@@ -108,12 +119,13 @@ export async function createShoppingItem(
     const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.shoppingItem.findUnique({
         where: { normalizedName },
-        select: { id: true, deletedAt: true },
+        select: { id: true, name: true, deletedAt: true },
       });
 
       if (existing && !existing.deletedAt) {
         return {
           status: "duplicate" as const,
+          name: existing.name,
         };
       }
 
@@ -141,8 +153,11 @@ export async function createShoppingItem(
         });
 
         return {
-          status: "created" as const,
-          item: restored,
+          status: "restored" as const,
+          item: {
+            ...restored,
+            action: "restored" as const,
+          },
         };
       }
 
@@ -169,12 +184,15 @@ export async function createShoppingItem(
 
       return {
         status: "created" as const,
-        item,
+        item: {
+          ...item,
+          action: "created" as const,
+        },
       };
     });
 
     if (result.status === "duplicate") {
-      return validationError(`「${name}」は既に買い物リストにあります`);
+      return conflictError(`「${result.name}」は既に買い物リストにあります`);
     }
 
     revalidatePath("/");
