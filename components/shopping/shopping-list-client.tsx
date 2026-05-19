@@ -140,6 +140,7 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
 
   useEffect(() => {
     tabRef.current = tab;
+    setCreateMessage(null);
   }, [tab]);
 
   useEffect(() => {
@@ -181,12 +182,13 @@ export function ShoppingListClient({ initialItems, tab }: ShoppingListClientProp
         return;
       }
 
+      const { action, ...itemPayload } = result.data;
       const nextItem: ShoppingItemWithRecipes = {
-        ...result.data,
+        ...itemPayload,
         recipeIngredients: [],
       };
       const message =
-        result.data.action === "restored"
+        action === "restored"
           ? `削除済みだった「${result.data.name}」を買うものに戻しました`
           : `「${result.data.name}」を買うものに追加しました`;
 

@@ -50,6 +50,9 @@ test("owner can add a shopping item from the shopping page", async ({ page }) =>
 
   await expect(page.getByText(`「${itemName}」を買うものに追加しました`)).toBeVisible();
   await expect(page.getByRole("listitem").filter({ hasText: itemName })).toBeVisible();
+
+  await page.getByRole("link", { name: /購入済み/ }).click();
+  await expect(page.getByText(`「${itemName}」を買うものに追加しました`)).toHaveCount(0);
 });
 
 test("shopping item form is only shown on the active tab", async ({ page }) => {
