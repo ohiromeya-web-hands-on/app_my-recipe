@@ -1,6 +1,6 @@
 "use server";
 
-import { ShoppingStatus, type ShoppingCategory } from "@prisma/client";
+import { ShoppingCategory, ShoppingStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { ApiResult } from "@/lib/result";
@@ -29,11 +29,45 @@ export type ShoppingItemActionData = ShoppingItemState & {
   category: ShoppingCategory;
 };
 
+export type CreateShoppingItemInput = {
+  name: string;
+  category: ShoppingCategory;
+  status: ShoppingStatus;
+};
+
+export type CreatedShoppingItemData = ShoppingItemActionData & {
+  normalizedName: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+  action: "created" | "restored";
+};
+
 function notFoundError(message = "買い物項目が見つかりません"): ApiResult<never> {
   return {
     ok: false,
     error: {
       code: "NOT_FOUND",
+      message,
+    },
+  };
+}
+
+function validationError(message: string): ApiResult<never> {
+  return {
+    ok: false,
+    error: {
+      code: "VALIDATION_ERROR",
+      message,
+    },
+  };
+}
+
+function conflictError(message: string): ApiResult<never> {
+  return {
+    ok: false,
+    error: {
+      code: "CONFLICT",
       message,
     },
   };
@@ -47,6 +81,131 @@ function internalError(message = "買い物リストの更新中にエラーが�
       message,
     },
   };
+}
+
+function isShoppingCategory(value: string): value is ShoppingCategory {
+  return (Object.values(ShoppingCategory) as string[]).includes(value);
+}
+
+function isShoppingStatus(value: string): value is ShoppingStatus {
+  return (Object.values(ShoppingStatus) as string[]).includes(value);
+}
+
+export async function createShoppingItem(
+  input: CreateShoppingItemInput,
+): Promise<ApiResult<CreatedShoppingItemData>> {
+  try {
+    await requireOwner();
+
+    const name = input.name.trim();
+    const normalizedName = normalizeShoppingItemName(name);
+
+    if (!name || !normalizedName) {
+      return validationError("品名を入力してください");
+    }
+
+    if (name.length > 40) {
+      return validationError("品名は40文字以内で入力してください");
+    }
+
+    if (!isShoppingCategory(input.category)) {
+      return validationError("カテゴリーを選択してください");
+    }
+
+    if (!isShoppingStatus(input.status)) {
+      return validationError("ステータスを選択してください");
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.shoppingItem.findUnique({
+        where: { normalizedName },
+        select: { id: true, name: true, deletedAt: true },
+      });
+
+      if (existing && !existing.deletedAt) {
+        return {
+          status: "duplicate" as const,
+          name: existing.name,
+        };
+      }
+
+      if (existing?.deletedAt) {
+        const restored = await tx.shoppingItem.update({
+          where: { id: existing.id },
+          data: {
+            name,
+            category: input.category,
+            status: input.status,
+            purchased: false,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            name: true,
+            normalizedName: true,
+            category: true,
+            status: true,
+            purchased: true,
+            createdAt: true,
+            updatedAt: true,
+            deletedAt: true,
+          },
+        });
+
+        return {
+          status: "restored" as const,
+          item: {
+            ...restored,
+            action: "restored" as const,
+          },
+        };
+      }
+
+      const item = await tx.shoppingItem.create({
+        data: {
+          name,
+          normalizedName,
+          category: input.category,
+          status: input.status,
+          purchased: false,
+        },
+        select: {
+          id: true,
+          name: true,
+          normalizedName: true,
+          category: true,
+          status: true,
+          purchased: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+        },
+      });
+
+      return {
+        status: "created" as const,
+        item: {
+          ...item,
+          action: "created" as const,
+        },
+      };
+    });
+
+    if (result.status === "duplicate") {
+      return conflictError(`「${result.name}」は既に買い物リストにあります`);
+    }
+
+    revalidatePath("/");
+    revalidatePath("/shopping");
+    return { ok: true, data: result.item };
+  } catch (error) {
+    if (isOwnerAuthError(error)) {
+      return ownerAuthErrorResult(error);
+    }
+
+    console.error("createShoppingItem failed", error);
+    return internalError("買い物項目を追加できませんでした");
+  }
 }
 
 export async function searchShoppingItem(
